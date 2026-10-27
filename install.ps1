@@ -8,6 +8,8 @@
 # app; your key and your lists are kept. To remove it, delete the folder and
 # the shortcut.
 $ErrorActionPreference = "Stop"
+# Windows PowerShell's download progress bar slows downloads to a crawl.
+$ProgressPreference = "SilentlyContinue"
 
 # Where the app is downloaded from. Override for testing.
 $ZipUrl = if ($env:LEAD_BUILDER_ZIP) { $env:LEAD_BUILDER_ZIP } else { "https://github.com/topkdev/lead-builder/archive/refs/heads/main.zip" }
@@ -23,11 +25,22 @@ Say "Getting the setup helper"
 $uv = (Get-Command uv -ErrorAction SilentlyContinue).Source
 if (-not $uv) {
     # uv (astral.sh) installs Python for the app without touching the rest of
-    # the computer. It goes in ~\.local\bin; the PATH is left alone.
-    $env:UV_NO_MODIFY_PATH = "1"
-    try { Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression | Out-Null }
-    catch { Fail "couldn't download the setup helper" }
-    $uv = Join-Path $HOME ".local\bin\uv.exe"
+    # the computer. It's downloaded as a plain program, not through its own
+    # install script: that script stops (and closes PowerShell) under
+    # Windows' default execution policy, which blocks downloaded scripts.
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+    $target = @{ "AMD64" = "x86_64"; "ARM64" = "aarch64"; "x86" = "i686" }[$arch]
+    if (-not $target) { $target = "x86_64" }
+    $bin = Join-Path $HOME ".local\bin"
+    $uvZip = Join-Path ([IO.Path]::GetTempPath()) ("uv-" + [guid]::NewGuid() + ".zip")
+    try {
+        New-Item -ItemType Directory -Force $bin | Out-Null
+        Invoke-WebRequest "https://github.com/astral-sh/uv/releases/latest/download/uv-$($target)-pc-windows-msvc.zip" `
+            -OutFile $uvZip -UseBasicParsing
+        Expand-Archive $uvZip $bin -Force
+        Remove-Item $uvZip -Force
+    } catch { Fail "couldn't download the setup helper" }
+    $uv = Join-Path $bin "uv.exe"
 }
 if (-not (Test-Path $uv)) { Fail "the setup helper didn't install" }
 
