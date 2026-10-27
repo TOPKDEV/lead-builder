@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lead List Builder</title>
+<style>
+:root {
+  --bg: #f5f4f0; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e0d8;
+  --soft: #efede7; --accent: #2b59c3; --accent-ink: #ffffff; --accent-soft: #e8eefb;
+  --ok: #1d7a3c; --ok-soft: #e5f3ea; --warn: #9a6200; --warn-soft: #fbf1dc; --bad: #b42318; --bad-soft: #fbe9e7;
+  --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141413; --card: #1e1e1c; --ink: #ecebe6; --muted: #a3a29c; --line: #34332f;
+    --soft: #262623; --accent: #7a9cff; --accent-ink: #0f1424; --accent-soft: #1f2843;
+    --ok: #5fc27e; --ok-soft: #17301f; --warn: #e3b04b; --warn-soft: #33290f; --bad: #ff8577; --bad-soft: #3a1b18;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 0 16px 80px; }
+header { max-width: 860px; margin: 0 auto; padding: 22px 0 8px; display: flex; align-items: center; gap: 12px; }
+header .logo { font-weight: 700; font-size: 18px; text-decoration: none; color: var(--ink); }
+header nav { margin-left: auto; display: flex; gap: 6px; }
+header nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 6px 10px; border-radius: 8px; }
+header nav a:hover, header nav a.on { background: var(--soft); color: var(--ink); }
+main { max-width: 860px; margin: 0 auto; }
+a { color: var(--accent); }
+h1 { font-size: 26px; line-height: 1.2; margin: 18px 0 6px; }
+h2 { font-size: 18px; margin: 0 0 6px; }
+h3 { font-size: 15px; margin: 0 0 4px; }
+p { margin: 4px 0; }
+.lead { color: var(--muted); margin: 0 0 18px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 0 0 14px; box-shadow: var(--shadow); }
+.step-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 26px 0 8px; }
+.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.choice { text-align: left; cursor: pointer; background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px 18px; color: var(--ink); font: inherit; }
+.choice:hover { border-color: var(--accent); }
+.choice.on { border-color: var(--accent); background: var(--accent-soft); }
+.choice strong { display: block; font-size: 16px; margin-bottom: 2px; }
+.choice span { color: var(--muted); font-size: 14px; }
+.check { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.check:first-child { border-top: 0; padding-top: 0; }
+.check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+.check .price { font-size: 13px; color: var(--muted); }
+.sub { margin: 10px 0 0; padding: 12px 14px; background: var(--soft); border-radius: 10px; font-size: 14px; }
+.sub label { display: flex; gap: 8px; align-items: center; margin: 4px 0; cursor: pointer; }
+.sub label.disabled { opacity: .45; cursor: default; }
+.sub input { accent-color: var(--accent); }
+.radios label { display: flex; gap: 10px; align-items: center; padding: 6px 0; cursor: pointer; }
+.radios input { accent-color: var(--accent); width: 18px; height: 18px; }
+input[type=text], input[type=password], input[type=number], select {
+  font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1 1 220px; }
+button.btn { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 11px 18px; cursor: pointer; background: var(--accent); color: var(--accent-ink); }
+button.btn:disabled { opacity: .5; cursor: default; }
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+button.danger { background: var(--bad-soft); color: var(--bad); }
+button.link { background: none; border: 0; color: var(--accent); padding: 0; font: inherit; cursor: pointer; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.chip { background: var(--accent-soft); color: var(--ink); border-radius: 99px; padding: 5px 8px 5px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
+.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
+.results { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.results button { display: flex; width: 100%; justify-content: space-between; gap: 10px; text-align: left; padding: 10px 12px; border: 0; border-top: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
+.results button:first-child { border-top: 0; }
+.results button:hover { background: var(--soft); }
+.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; color: var(--muted); }
+.drop.over, .drop:hover { border-color: var(--accent); color: var(--ink); }
+.mapping { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; align-items: center; margin-top: 12px; }
+.table-wrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
+th { border-top: 0; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; background: var(--soft); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 700; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--soft); color: var(--muted); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.run { background: var(--accent-soft); color: var(--accent); }
+.jobs a.card { display: flex; gap: 12px; align-items: center; text-decoration: none; color: var(--ink); }
+.jobs a.card:hover { border-color: var(--accent); }
+.jobs .meta { color: var(--muted); font-size: 14px; }
+.jobs .right { margin-left: auto; text-align: right; }
+.bar { height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; margin: 10px 0 6px; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .6s; }
+.bar.spend > i { background: var(--ok); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.tile { background: var(--soft); border-radius: 12px; padding: 12px 14px; }
+.tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.tile span { font-size: 13px; color: var(--muted); }
+.files .file { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.files .file:first-child { border-top: 0; }
+.files .file div { flex: 1; }
+.note { border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
+.note.warn { background: var(--warn-soft); }
+.note.bad { background: var(--bad-soft); }
+.note.ok { background: var(--ok-soft); }
+.note.info { background: var(--accent-soft); }
+pre.log { background: var(--soft); border-radius: 10px; padding: 12px; font-size: 12px; overflow-x: auto; max-height: 280px; white-space: pre-wrap; }
+details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+.key-card label { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.key-card input { margin-top: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -3px; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+.budget { max-width: 160px; }
+@media (max-width: 560px) { .mapping { grid-template-columns: 1fr; } h1 { font-size: 22px; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="#/">Lead List Builder</a>
+  <nav><a href="#/" id="nav-home">Your lists</a><a href="#/keys" id="nav-keys">Keys</a></nav>
+</header>
+<main id="app"></main>
+<script>
+const TOKEN = "__TOKEN__";
+const $app = document.getElementById("app");
+let home = null, poll = null, wizard = null;
+
+// --- helpers ---------------------------------------------------------------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => "$" + Number(n || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const cents = n => n < 0.01 ? "$" + Number(n).toFixed(3) : money(n);
+const num = n => Number(n || 0).toLocaleString();
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4000);
+}
+async function api(path, body, opts = {}) {
+  const init = body === undefined ? {} : {
+    method: "POST", headers: {"Content-Type": "application/json", ...(opts.headers || {})},
+    body: opts.raw ? body : JSON.stringify(body)};
+  const url = body === undefined ? path : path + (path.includes("?") ? "&" : "?") + "t=" + TOKEN;
+  const r = await fetch(url, init);
+  const data = await r.json().catch(() => ({error: "The app didn't answer. Is its window still open?"}));
+  if (!r.ok || data.error) throw new Error(data.error || "Something went wrong.");
+  return data;
+}
+function stopPolling() { if (poll) { clearTimeout(poll); poll = null; } }
+
+// --- router ----------------------------------------------------------------
+async function route() {
+  stopPolling();
+  const h = location.hash.replace(/^#\/?/, "");
+  document.getElementById("nav-home").classList.toggle("on", h === "");
+  document.getElementById("nav-keys").classList.toggle("on", h === "keys");
+  try {
+    home = await api("/api/home");
+    if (h === "") return renderHome();
+    if (h === "new") return renderWizard();
+    if (h === "keys") return renderKeysPage();
+    if (h.startsWith("job/")) return renderJob(decodeURIComponent(h.slice(4)));
+    location.hash = "#/";
+  } catch (e) { $app.innerHTML = `<div class="note bad" style="margin-top:24px">${esc(e.message)}</div>`; }
+}
+window.addEventListener("hashchange", route);
+
+// --- home ------------------------------------------------------------------
+function jobState(j) {
+  if (j.running) return ["Running", "run"];
+  if (j.stopped) return ["Stopped", "bad"];
+  if (!j.job.approved_budget) return [j.quote ? "Needs your OK" : "Getting the price", "warn"];
+  if (j.finished) return ["Done", "ok"];
+  return ["Ready to start", "warn"];
+}
+function describe(job) {
+  if (job.mode === "build") return "New list · " + (job.markets || []).map(m => m.label).join(", ");
+  const f = (job.source_file || "").split(/[\\/]/).pop().replace(/^\d+-/, "");
+  return "Your list · " + f;
+}
+function renderHome() {
+  const jobs = home.jobs;
+  $app.innerHTML = `
+    <h1>${jobs.length ? "Your lists" : "Welcome"}</h1>
+    <p class="lead">${jobs.length ? "Pick one up where you left off, or start a new one." :
+      "Build a list of real estate agents from active listings, or check a list you already have: real cell numbers, top producers, verified emails. You'll see the price before anything is spent."}</p>
+    ${home.keys.monid ? "" : `<div class="card"><h2>First: your Monid key</h2>
+      <p>One key runs everything. Sign up at Monid, add a little credit, create an API key, and paste it in. About two minutes, once.</p>
+      <div class="actions" style="margin:8px 0 0"><button class="btn" onclick="location.hash='#/keys'">Add my key</button></div></div>`}
+    <div class="actions" style="margin:0 0 18px"><button class="btn${home.keys.monid ? "" : " ghost"}" onclick="location.hash='#/new'">Start a new list</button></div>
+    <div class="jobs">${jobs.map(j => {
+      const [label, cls] = jobState(j);
+      return `<a class="card" href="#/job/${encodeURIComponent(j.job.name)}">
+        <div><h2>${esc(j.job.name)}</h2><div class="meta">${esc(describe(j.job))}</div></div>
+        <div class="right"><span class="pill ${cls}">${label}</span>
+        <div class="meta small" style="margin-top:4px">${num(j.status.agents)} agents · ${money(j.status.spent)} spent</div></div></a>`;
+    }).join("")}</div>`;
+}
+
+// --- new list wizard -------------------------------------------------------
+function freshWizard() {
+  return {mode: null, markets: [], minListings: 1, results: [], searching: false,
+          upload: null, mapping: {}, addons: {phones: true, producers: false, emails: false},
+          phonesFor: "all", deep: false, name: "", busy: false};
+}
+function renderWizard() {
+  wizard = wizard || freshWizard();
+  const w = wizard, P = home.prices;
+  const step2 = w.mode === "build" ? `
+      <div class="step-label">2 · Which areas?</div>
+      <div class="card">
+        <p class="muted small">Counties work best ("Broward County, FL"). Cities and ZIP codes work too. Include the state.</p>
+        <form class="row" onsubmit="searchMarkets(event)">
+          <input class="grow" type="text" id="q" placeholder="e.g. Hillsborough County, FL" autocomplete="off">
+          <button class="btn ghost" ${w.searching ? "disabled" : ""}>${w.searching ? '<span class="spinner"></span>Searching' : "Search"}</button>
+        </form>
+        ${w.results.length ? `<div class="results">${w.results.map((m, i) =>
+          `<button onclick="addMarket(${i})"><span>${esc(m.label)}</span><span class="muted small">${esc(m.kind)} · add</span></button>`).join("")}</div>` : ""}
+        <div class="chips">${w.markets.map((m, i) => `<span class="chip">${esc(m.label)}<button onclick="dropMarket(${i})" aria-label="Remove">×</button></span>`).join("")}</div>
+      </div>
+      <div class="step-label">Which agents?</div>
+      <div class="card radios">
+        ${[[1, "Everyone with an active listing", "The biggest list."],
+           [2, "2 or more active listings", "About 40% of agents: the active ones."],
+           [5, "5 or more active listings", "About 8%: the heavy hitters."]].map(([v, t, d]) =>
+          `<label><input type="radio" name="minl" ${w.minListings === v ? "checked" : ""} onchange="wizard.minListings=${v}">
+           <span><b>${t}</b> <span class="muted small">${d}</span></span></label>`).join("")}
+        <p class="muted small" style="margin-top:6px">Getting the listings, with each agent's name, phone and email, costs about ${money(P.listing * 1000)} per 1,000 listings.</p>
+      </div>` : w.mode === "enrich" ? `
+      <div class="step-label">2 · Your list</div>
+      <div class="card">
+        ${w.upload ? `
+          <div class="row"><div class="grow"><h3>${esc(w.upload.filename)}</h3>
+          <p class="muted small">${num(w.upload.rows)} rows. Check we've read the columns right:</p></div>
+          <button class="link" onclick="wizard.upload=null;renderWizard()">Use a different file</button></div>
+          <div class="mapping">${[["name","Agent's name"],["email","Email"],["phone","Phone"],["brokerage","Brokerage"],["city","City"]].map(([f, label]) => `
+            <label for="map-${f}">${label}</label>
+            <select id="map-${f}" onchange="wizard.mapping['${f}']=this.value">
+              <option value="">— not in my list —</option>
+              ${w.upload.header.map(h => `<option ${w.mapping[f] === h ? "selected" : ""}>${esc(h)}</option>`).join("")}
+            </select>`).join("")}</div>
+          <div class="table-wrap"><table><tr>${w.upload.header.map(h => `<th>${esc(h)}</th>`).join("")}</tr>
+            ${w.upload.preview.slice(0, 3).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>` : `
+          <label class="drop" id="drop">
+            <input type="file" accept=".csv,.xlsx,.xlsm" hidden onchange="uploadFile(this.files[0])">
+            <b>Drop your CSV or Excel file here</b><br><span class="small">or click to choose it</span>
+          </label>
+          <p class="muted small" style="margin-top:8px">Using Google Sheets or Numbers? Export it as CSV first.</p>`}
+      </div>` : "";
+  const ready = w.mode && (w.mode === "build" ? w.markets.length : w.upload);
+  $app.innerHTML = `
+    <h1>Start a new list</h1>
+    <p class="lead">Pick what you want. You'll see the exact price before anything is spent.</p>
+    <div class="step-label">1 · What are we working with?</div>
+    <div class="choices">
+      <button class="choice ${w.mode === "build" ? "on" : ""}" onclick="pickMode('build')">
+        <strong>Build a new list</strong><span>Every agent with an active listing in your area.</span></button>
+      <button class="choice ${w.mode === "enrich" ? "on" : ""}" onclick="pickMode('enrich')">
+        <strong>Use a list I already have</strong><span>A CSV or Excel file of agents.</span></button>
+    </div>
+    ${step2}
+    ${ready ? `
+    <div class="step-label">3 · What should we do?</div>
+    <div class="card">
+      <label class="check"><input type="checkbox" ${w.addons.phones ? "checked" : ""} onchange="wizard.addons.phones=this.checked;renderWizard()">
+        <div><h3>Check phone numbers</h3><p class="small">Is each number the agent's cell, or an office line or landline? If some are wrong, we'll tell you how many and what finding the real ones costs.</p>
+        <p class="price">About ${cents(P.phone)} per number</p>
+        ${w.addons.phones ? `<div class="sub">
+          <b>Which agents?</b>
+          <label><input type="radio" name="pf" ${w.phonesFor === "all" ? "checked" : ""} onchange="wizard.phonesFor='all'"> Everyone</label>
+          <label><input type="radio" name="pf" ${w.phonesFor === "emails" ? "checked" : ""} onchange="wizard.phonesFor='emails'"> Only agents with an email</label>
+          <label class="${w.addons.producers ? "" : "disabled"}"><input type="radio" name="pf" ${w.phonesFor === "producers" ? "checked" : ""} ${w.addons.producers ? "" : "disabled"} onchange="wizard.phonesFor='producers'"> Only top producers <span class="muted">${w.addons.producers ? "" : "(tick Find top producers)"}</span></label>
+        </div>` : ""}</div></label>
+      <label class="check"><input type="checkbox" ${w.addons.producers ? "checked" : ""} onchange="wizard.addons.producers=this.checked;if(!this.checked&&wizard.phonesFor==='producers')wizard.phonesFor='all';renderWizard()">
+        <div><h3>Find top producers</h3><p class="small">How many listings each agent sold in the last 12 months, from homes.com.</p>
+        <p class="price">About ${cents(P.volume)} per agent</p></div></label>
+      <label class="check"><input type="checkbox" ${w.addons.emails ? "checked" : ""} onchange="wizard.addons.emails=this.checked;renderWizard()">
+        <div><h3>Find &amp; verify emails</h3><p class="small">Finds missing emails on brokerage and personal sites, then checks they won't bounce.</p>
+        <p class="price">About ${cents(P.emails)} per agent</p>
+        ${w.addons.emails ? `<div class="sub"><label><input type="checkbox" ${w.deep ? "checked" : ""} onchange="wizard.deep=this.checked"> Also try the slow Chrome pass <span class="muted">(finds about 30% more; takes hours and this computer has to stay on)</span></label></div>` : ""}</div></label>
+    </div>
+    <div class="step-label">4 · Name it</div>
+    <div class="card row">
+      <input class="grow" type="text" id="jobname" value="${esc(w.name || suggestName())}" oninput="wizard.name=this.value">
+      <button class="btn" ${w.busy ? "disabled" : ""} onclick="createJob()">${w.busy ? '<span class="spinner"></span>Setting up' : "See the price →"}</button>
+    </div>` : ""}`;
+  const drop = document.getElementById("drop");
+  if (drop) {
+    drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+    drop.addEventListener("drop", e => { e.preventDefault(); uploadFile(e.dataTransfer.files[0]); });
+  }
+}
+function suggestName() {
+  const w = wizard, month = new Date().toLocaleString("en-US", {month: "short"}).toLowerCase();
+  const base = w.mode === "build" ? (w.markets[0]?.label || "list").split(",")[0].replace(/ county/i, "")
+                                  : (w.upload?.filename || "my-list").replace(/\.\w+$/, "");
+  return (base + "-" + month).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+function pickMode(m) { wizard.mode = m; renderWizard(); }
+async function searchMarkets(e) {
+  e.preventDefault();
+  const q = document.getElementById("q").value.trim();
+  if (!q) return;
+  wizard.searching = true; renderWizard();
+  try { wizard.results = (await api("/api/markets?q=" + encodeURIComponent(q))).markets;
+        if (!wizard.results.length) toast("No listings there. Try the county with its state, e.g. Broward County, FL."); }
+  catch (err) { toast(err.message); }
+  wizard.searching = false; renderWizard();
+  const box = document.getElementById("q"); if (box) box.value = q;
+}
+function addMarket(i) {
+  const m = wizard.results[i];
+  if (!wizard.markets.some(x => x.code === m.code)) wizard.markets.push(m);
+  wizard.results = []; renderWizard();
+}
+function dropMarket(i) { wizard.markets.splice(i, 1); renderWizard(); }
+async function uploadFile(file) {
+  if (!file) return;
+  try {
+    const r = await fetch("/api/upload?t=" + TOKEN, {method: "POST", body: file,
+      headers: {"X-Filename": encodeURIComponent(file.name)}});
+    const data = await r.json();
+    if (!r.ok || data.error) throw new Error(data.error);
+    wizard.upload = data; wizard.mapping = {...data.mapping};
+    renderWizard();
+  } catch (e) { toast(e.message || "Couldn't read that file."); }
+}
+async function createJob() {
+  const w = wizard;
+  const addons = [];
+  if (w.addons.phones) addons.push("verify_phones");
+  if (w.addons.producers) addons.push("volume");
+  if (w.addons.emails) addons.push("emails", "verify_emails");
+  if (w.addons.emails && w.deep) addons.push("deep_emails");
+  if (w.mode === "build" ? false : !addons.length) return toast("Tick at least one thing to do with your list.");
+  w.busy = true; renderWizard();
+  try {
+    const res = await api("/api/jobs", {
+      name: document.getElementById("jobname").value || suggestName(), mode: w.mode,
+      markets: w.markets.map(m => m.code), file: w.upload?.path, mapping: w.mapping,
+      addons, min_listings: w.minListings, phones_for: w.addons.phones ? w.phonesFor : "all",
+});
+    wizard = null;
+    location.hash = "#/job/" + encodeURIComponent(res.name);
+  } catch (e) { w.busy = false; renderWizard(); toast(e.message); }
+}
+
+// --- a job -----------------------------------------------------------------
+const STEP_NAMES = {count: "Count listings", listings: "Get listings (agents' names, phones, emails)",
+  agents: "Merge into agents", emails: "Find emails",
+  deep_emails: "Chrome email pass", verify_emails: "Verify emails", volume: "homes.com sales",
+  verify_phones: "Check phone numbers", fix_phones: "Find real cell numbers"};
+let current = null;
+async function renderJob(name, quiet) {
+  let v;
+  try { v = await api("/api/jobs/" + encodeURIComponent(name)); }
+  catch (e) { $app.innerHTML = `<div class="note bad" style="margin-top:24px">${esc(e.message)}</div>`; return; }
+  current = v;
+  const j = v.job, q = v.quote, qj = v.quote_job, s = v.status;
+  const pricing = qj && qj.state === "working";
+  const parts = [];
+
+  if (v.running) parts.push(runningCard(v));
+  else if (pricing) parts.push(`<div class="card"><span class="spinner"></span><b>Working out the price…</b>
+    <p class="muted small">${j.mode === "build" ? "Counting the active listings in your areas first, so the price is based on real numbers. This can take a few minutes and costs a few cents." : "This only takes a moment."}</p></div>`);
+  else {
+    if (qj && qj.state === "error") parts.push(`<div class="note bad"><b>Couldn't work out the price.</b><p>${esc(qj.error)}</p>
+      <div class="actions"><button class="btn ghost" onclick="act('quote')">Try again</button></div></div>`);
+    if (v.log.stopped && v.finished) parts.push(stoppedCard(v));
+    if (!j.approved_budget) {
+      if (v.missing && Object.keys(v.missing).length) parts.push(await keysCard(v.needs, true));
+      if (q) parts.push(priceCard(v));
+      else if (!qj) parts.push(`<div class="card"><p>Let's work out what this costs.</p><div class="actions"><button class="btn" onclick="act('quote')">See the price</button></div></div>`);
+    } else if (!v.finished) {
+      parts.push(`<div class="card"><h2>Approved up to ${money(j.approved_budget)}</h2><p class="muted">Ready when you are.</p>
+        <div class="actions"><button class="btn" onclick="act('run')">Start</button></div></div>`);
+    } else if (v.trial && !v.log.stopped) {
+      parts.push(`<div class="note ok"><h2>Trial finished</h2><p>Here's a sample. If it looks right, run the rest. Nothing already done is paid for twice.</p>
+        <div class="actions"><button class="btn" onclick="act('run')">Run the rest</button></div></div>`);
+    } else if (!v.log.stopped && v.left) {
+      parts.push(`<div class="note warn"><h2>Mostly done</h2><p>${num(v.left)} couldn't be done this time: a website or service didn't answer.
+        Trying again picks up only those, so nothing is paid for twice.</p>
+        <div class="actions"><button class="btn" onclick="act('run')">Try again</button></div></div>`);
+    } else if (!v.log.stopped) {
+      parts.push(`<div class="note ok"><h2>Done</h2><p>Your files are below.</p></div>`);
+    }
+  }
+  if (!v.running && !pricing && v.fix_text && j.approved_budget) parts.push(`
+    <div class="card"><h2>Some numbers aren't the agent's own cell</h2><p>${esc(v.fix_text).replace(/\n/g, "<br>")}</p>
+    <div class="actions"><button class="btn" onclick="act('add', {addons: ['fix_phones']})">Find the real numbers (~${money(s.fix.cost)})</button>
+    <span class="muted small">You'll see the exact price and approve it first.</span></div></div>`);
+  parts.push(resultsCard(v));
+
+  $app.innerHTML = `
+    <h1>${esc(j.name)}</h1>
+    <p class="lead">${esc(describe(j))}</p>
+    ${parts.join("")}`;
+  if (v.files.length && !v.running) loadPreview(j.name);
+  const busy = v.running || pricing;
+  if (busy && location.hash === "#/job/" + encodeURIComponent(name)) poll = setTimeout(() => renderJob(name, true), 2500);
+}
+function runningCard(v) {
+  const L = v.log, s = v.status, j = v.job;
+  const pct = L.progress ? Math.min(100, 100 * L.progress.done / Math.max(1, L.progress.total)) : null;
+  const spendPct = j.approved_budget ? Math.min(100, 100 * s.spent / j.approved_budget) : 0;
+  return `<div class="card">
+    <div class="row"><div class="grow"><span class="pill run">Running${v.trial ? " · trial of 25" : ""}</span>
+      <h2 style="margin-top:8px">${esc(L.step_words || "Starting")}</h2></div>
+      <button class="btn danger" onclick="if(confirm('Stop the run? Everything done so far is kept.'))act('stop')">Stop</button></div>
+    ${pct === null ? `<p class="muted small"><span class="spinner"></span>Getting going…</p>` : `
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <p class="muted small">${num(L.progress.done)} of ${num(L.progress.total)} · about ${L.progress.minutes_left} min left on this step</p>`}
+    <div class="bar spend"><i style="width:${spendPct}%"></i></div>
+    <p class="muted small">Spent ${money(s.spent)} of ${money(j.approved_budget)} approved. It stops itself at ${money(v.budget_stop)}.</p>
+    <p class="muted small">You can close this tab; the run keeps going as long as the Lead List Builder window stays open. Your Mac won't sleep while it runs.</p>
+    <details><summary>Details</summary><pre class="log">${esc(L.tail)}</pre></details></div>`;
+}
+function stoppedCard(v) {
+  const budget = /budget/i.test(v.log.stopped);
+  return `<div class="note bad"><h2>Stopped</h2><p>${esc(v.log.stopped)}</p>
+    <p class="small">Everything finished so far is saved.${budget ? " Approve a bit more to carry on:" : " Fix that, then try again."}</p>
+    <div class="actions">${budget ? `<input class="budget" type="number" min="1" step="1" id="more" value="${Math.ceil((v.job.approved_budget || 0) * 1.5)}">
+      <button class="btn" onclick="approve(+document.getElementById('more').value)">Approve and continue</button>` :
+      `<button class="btn" onclick="act('run')">Try again</button><a href="#/keys" class="small">Check my keys</a>`}</div>
+    <details style="margin-top:10px"><summary>Details</summary><pre class="log">${esc(v.log.tail)}</pre></details></div>`;
+}
+function priceCard(v) {
+  const q = v.quote, blocked = v.missing && Object.keys(v.missing).length;
+  const rows = q.lines.filter(l => l.count || l.cost).map(l => `<tr><td>${esc(STEP_NAMES[l.step] || l.step)}</td>
+    <td class="num">${num(l.count)}</td><td class="num">${money(l.cost)}</td><td class="num">${l.hours < 0.1 ? "minutes" : l.hours + " h"}</td></tr>`).join("");
+  const suggested = Math.max(1, Math.round(q.spent_so_far + q.total * 1.1 + 0.5));
+  return `<div class="card">
+    <h2>The price</h2>
+    <p class="muted small">${q.listings ? num(q.listings) + " active listings, " : ""}${q.agents_estimated ? "about " : ""}${num(q.agents)} agents${q.agents_estimated ? " (exact once the listings are in)" : ""}.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Step</th><th class="num">How many</th><th class="num">Cost</th><th class="num">Time</th></tr>
+      ${rows || `<tr><td colspan="4" class="muted">Nothing left to pay for.</td></tr>`}
+      <tr class="total"><td>Total</td><td></td><td class="num">${money(q.total)}</td><td class="num">${q.hours < 0.1 ? "minutes" : q.hours + " h"}</td></tr>
+    </table></div>
+    ${(q.notes || []).map(n => `<p class="muted small" style="margin-top:8px">Note: ${esc(n)}</p>`).join("")}
+    ${q.spent_so_far ? `<p class="muted small">Already spent on this list: ${money(q.spent_so_far)}. The budget below includes it.</p>` : ""}
+    <div class="actions">
+      <label class="small muted" for="budget">Spend up to $</label>
+      <input class="budget" type="number" min="1" step="1" id="budget" value="${suggested}">
+      <button class="btn" ${blocked ? "disabled" : ""} onclick="approve(+document.getElementById('budget').value)">Approve &amp; start</button>
+      <button class="btn ghost" ${blocked ? "disabled" : ""} onclick="approve(+document.getElementById('budget').value, 25)">Try 25 agents first</button>
+    </div>
+    ${blocked ? `<p class="small" style="margin-top:8px;color:var(--warn)">Add the keys above first.</p>` :
+      `<p class="muted small" style="margin-top:8px">It stops itself if spending passes this by 25%. Nothing is charged twice.</p>`}
+  </div>`;
+}
+function resultsCard(v) {
+  const s = v.status, j = v.job, a = j.addons;
+  if (!s.agents && !v.files.length) return "";
+  const tiles = [[s.agents, "agents"]];
+  if (a.includes("emails") || s.emails) tiles.push([s.emails, "emails"]);
+  if (a.includes("verify_emails")) tiles.push([s.verified, "verified emails"]);
+  if (a.includes("verify_phones")) tiles.push([s.mobile, "cell numbers"]);
+  if (a.includes("fix_phones")) tiles.push([s.replaced, "real cells found"]);
+  if (a.includes("volume")) tiles.push([s.producers, `sold ${j.producer_min}+ last year`]);
+  const label = {"everyone": "Everyone", "email-ready": "Ready to email (verified)", "email-probably-ok": "Probably fine to email (can't be confirmed)", "email-ready-UNVERIFIED": "Emails, not verified yet",
+                 "cell-phones": "Cell phones", "producers": "Top producers"};
+  return `<div class="card"><h2>Your list</h2>
+    <div class="tiles" style="margin:10px 0 14px">${tiles.map(([n, t]) => `<div class="tile"><b>${num(n)}</b><span>${t}</span></div>`).join("")}</div>
+    ${v.files.length ? `<div class="files">${v.files.map(f => `<div class="file"><div><b>${esc(label[f.kind] || f.kind)}</b>
+      <div class="muted small">${num(f.rows)} rows · ${esc(f.file)}</div></div>
+      <a class="btn ghost" style="text-decoration:none;padding:8px 14px;border-radius:10px;border:1px solid var(--line);color:var(--ink);font-size:14px"
+         href="/api/jobs/${encodeURIComponent(j.name)}/download/${encodeURIComponent(f.file)}">Download</a></div>`).join("")}</div>
+    <div class="actions"><button class="btn ghost" onclick="act('open')">Open the folder</button></div>
+    <div id="preview"></div>` : ""}
+    <p class="muted small" style="margin-top:12px">Cold email has to follow CAN-SPAM (a real address and a working opt-out). Mass texting or auto-dialing cell phones falls under the TCPA and Do Not Call rules; check with a lawyer before doing that.</p>
+  </div>`;
+}
+async function loadPreview(name) {
+  try {
+    const p = await api("/api/jobs/" + encodeURIComponent(name) + "/preview");
+    const el = document.getElementById("preview");
+    if (!el || !p.rows.length) return;
+    el.innerHTML = `<p class="muted small" style="margin-top:14px">A sample:</p><div class="table-wrap"><table>
+      <tr>${p.columns.map(c => `<th>${esc(c.replace(/_/g, " "))}</th>`).join("")}</tr>
+      ${p.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
+  } catch (e) { /* the preview is a nicety */ }
+}
+async function act(action, body = {}) {
+  stopPolling();
+  try {
+    await api("/api/jobs/" + encodeURIComponent(current.job.name) + "/" + action, body);
+    if (action === "open") return toast("Opened the folder.");
+    renderJob(current.job.name);
+  } catch (e) { toast(e.message); }
+}
+function approve(budget, limit) {
+  if (!budget || budget < 1) return toast("Enter a budget of at least $1.");
+  act("approve", {budget, limit: limit || null});
+}
+
+// --- keys ------------------------------------------------------------------
+async function keysCard(needs, inline) {
+  const k = await api("/api/keys");
+  const services = k.services.filter(s => !inline || (needs.includes(s.check) && (!s.present || s.state === "bad")));
+  if (!services.length) return "";
+  return `${inline ? `<div class="note warn"><b>${services.length === 1 ? "One key first." : "A couple of keys first."}</b> ${services.length === 1 ? "The service below gives you a key" : "Each service below gives you a key"} when you sign up. Paste it in, then Save &amp; test.</div>` : ""}
+    ${services.map(keyCard).join("")}
+    <div class="actions" style="margin:-2px 0 16px"><button class="btn" onclick="saveKeys(${inline})">Save &amp; test</button></div>`;
+}
+function keyCard(s) {
+  const status = s.state === "ok" ? `<p class="small" style="color:var(--ok)">✓ ${esc(s.message)}</p>` :
+                 s.state === "bad" ? `<p class="small" style="color:var(--bad)">Problem: ${esc(s.message)}</p>` :
+                 s.present ? `<p class="small muted">Saved.</p>` : "";
+  return `<div class="card key-card"><h2>${esc(s.title)}</h2><p>${esc(s.for)}</p>
+    <p class="muted small">${esc(s.price)}</p>
+    <a href="${esc(s.link)}" target="_blank" rel="noopener" class="small">${esc(s.link_text)} →</a>
+    ${s.hint ? `<p class="muted small">${esc(s.hint)}</p>` : ""}
+    ${s.fields.map(f => `<label>${esc(f.label)}<input type="password" data-key="${esc(f.key)}" autocomplete="off" spellcheck="false" placeholder="${esc(f.saved || "paste here")}"></label>`).join("")}
+    ${status}</div>`;
+}
+async function saveKeys(inline) {
+  const values = {};
+  document.querySelectorAll("input[data-key]").forEach(i => { if (i.value.trim()) values[i.dataset.key] = i.value.trim(); });
+  if (!Object.keys(values).length) return toast("Paste a key first.");
+  toast("Testing your keys…");
+  try {
+    const k = await api("/api/keys", values);
+    const bad = k.services.filter(s => s.state === "bad");
+    if (bad.length) toast("That key didn't work: " + bad.map(s => s.title.split(":")[0]).join(", "));
+    else toast("Saved. It works.");
+    if (inline) { await api("/api/jobs/" + encodeURIComponent(current.job.name) + "/quote", {}); renderJob(current.job.name); }
+    else renderKeysPage(k);
+  } catch (e) { toast(e.message); }
+}
+async function renderKeysPage(checked) {
+  const k = checked || await api("/api/keys");
+  $app.innerHTML = `<h1>Keys</h1>
+    <p class="lead">One Monid key runs everything. It stays on this computer.</p>
+    ${k.services.map(keyCard).join("")}
+    <div class="actions"><button class="btn" onclick="saveKeys(false)">Save &amp; test</button></div>`;
+}
+
+route();
+</script>
+</body>
+</html>
