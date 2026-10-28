@@ -23,6 +23,7 @@ if errorlevel 1 (
   copy /y requirements.txt .venv\requirements.txt >nul
 )
 
+set PYTHONUTF8=1
 .venv\Scripts\python leads.py app
 pause
 exit /b 0

@@ -70,7 +70,7 @@ class Job:
 
     def save(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
-        (self.dir / "job.json").write_text(json.dumps(asdict(self), indent=2))
+        (self.dir / "job.json").write_text(json.dumps(asdict(self), indent=2), encoding="utf-8")
 
 
 def slug(name: str) -> str:
@@ -85,7 +85,7 @@ def load(name: str) -> Job:
     if not path.exists():
         names = ", ".join(all_names()) or "none yet"
         raise SystemExit(f"No job called {name!r}. Jobs: {names}")
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     # A job saved by an older version may carry settings that no longer exist.
     known = {f.name for f in fields(Job)}
     return Job(**{k: v for k, v in data.items() if k in known})

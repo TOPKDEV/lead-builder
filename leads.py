@@ -6,7 +6,7 @@ also works by hand.
   python leads.py app                             the app: everything below, in the browser
   python leads.py keys [--job NAME]               open the page to paste the Monid key
   python leads.py doctor                          whether the key works, what can run
-  python leads.py find-market "Tampa, FL"         check an area has listings (a tenth of a cent)
+  python leads.py find-market "Tampa, FL"         look up a county, city or ZIP (free)
   python leads.py new NAME --build --market "Hillsborough County, FL" [--market ...] --addons all
   python leads.py new NAME --enrich my-list.csv --addons verify_phones,volume
   python leads.py quote NAME                      cost and time, before spending
@@ -103,7 +103,7 @@ def cmd_try(args):
     out.mkdir(parents=True, exist_ok=True)
     name = re.sub(r"[^a-z0-9]+", "-", f"{args.provider}-{args.endpoint}".lower()).strip("-")
     path = out / f"{name}.json"
-    path.write_text(json.dumps(res, indent=1))
+    path.write_text(json.dumps(res, indent=1), encoding="utf-8")
     print(f"Status: {res.get('status')}. Saved the full answer to {path}")
 
 
@@ -111,11 +111,10 @@ def cmd_find_market(args):
     query = " ".join(args.query)
     markets = actions.find_markets(query)
     if not markets:
-        print(f"No listings found in {query!r}. Try a county with its state, e.g. \"Hillsborough County, FL\".")
+        print(f"No US county, city or ZIP code matches {query!r}.")
         return
     for m in markets:
-        print(f"{m['label']}: {m['kind']}")
-        print(f"Use it with: --market \"{m['code']}\"")
+        print(f"  --market \"{m['code']}\"   ({m['kind']})")
 
 
 def cmd_new(args):
@@ -195,6 +194,9 @@ def cmd_run(args):
     if job.approved_budget is None:
         raise SystemExit(f"Not approved yet. Run `python leads.py quote {job.name}`, "
                          f"then `python leads.py approve {job.name} --budget <dollars>`.")
+    if not args.limit and not args.only:
+        # A full run ends any trial the app started; its page stops offering "run the rest".
+        (job.dir / "run.limit").unlink(missing_ok=True)
     try:
         pipeline.run(job, only=args.only, limit=args.limit)
     except pipeline.FATAL as e:
@@ -246,6 +248,13 @@ def cmd_jobs(args):
 
 
 def main():
+    # Windows consoles and redirected logs default to an old code page, where
+    # printing "→" or "✓" fails; UTF-8 everywhere.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     logging.basicConfig(level=settings.env("LOG_LEVEL", "WARNING"), format="%(levelname)s %(message)s")
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)

@@ -3,9 +3,10 @@
   everyone.csv        every agent and everything known about them
   email-ready.csv     verified deliverable emails only (or every found email,
                       flagged, when verification wasn't run)
-  email-probably-ok.csv  emails on catch-all domains (which accept any address,
-                      so no check can confirm them) that came from the agent's
-                      own listing or the person's own list, not from a search
+  email-probably-ok.csv  emails no check can confirm, that came from the agent's
+                      own listing or the person's own list, not from a search:
+                      catch-all domains (which accept any address), and mail
+                      servers that won't say (Yahoo, AOL, many brokerages)
   cell-phones.csv     numbers confirmed as mobile, not a known TCPA litigator, and not registered
                       to someone else (including cells found by fix_phones)
   producers.csv       sold at least N listings last year, listing mills removed
@@ -76,6 +77,19 @@ def _row(agent: dict, mapped: set[str]) -> dict:
     return out
 
 
+# Where the checker's "the mail server wouldn't say" really means the
+# mailbox doesn't exist: made-up Gmail addresses get that answer, real ones
+# don't. On Yahoo, AOL and most brokerage servers it just can't tell
+# (Weston, FL, 2026-10-27: 34 of 36 such answers were on those).
+TRUSTED_VERIFIER_DOMAINS = {"gmail.com", "googlemail.com", "hotmail.com", "outlook.com", "live.com", "msn.com"}
+
+
+def _unconfirmable(agent: dict) -> bool:
+    check = agent.get("email_check")
+    domain = (agent.get("email") or "").rsplit("@", 1)[-1].lower()
+    return check == "catch_all" or (check == "unknown" and domain not in TRUSTED_VERIFIER_DOMAINS)
+
+
 def _write(path, rows: list[dict]) -> int:
     header: list[str] = []
     for r in rows:
@@ -108,7 +122,7 @@ def export(job: Job) -> dict[str, tuple[str, int]]:
     verified = any(a.get("email_check") for a in with_email)
     if verified:
         write("email-ready", [a for a in with_email if a.get("email_check") == "ok"])
-        probably = [a for a in with_email if a.get("email_check") == "catch_all"
+        probably = [a for a in with_email if _unconfirmable(a)
                     and (a.get("email_status") == "imported" or a.get("email_source") == "realtor.com listing")]
         if probably:
             write("email-probably-ok", probably)

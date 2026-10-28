@@ -62,10 +62,10 @@ Batch these into one AskUserQuestion call where you can (up to 4 questions).
 
 **Building a new list**
 - In chat: "Which areas? Counties work best, cities and ZIP codes too."
-  For each, run `leads.py find-market "<area>, <ST>"` (always with the
-  state; a tenth of a cent). It prints the cities its listings are in;
-  confirm it by name ("Hillsborough County, FL: Tampa, Brandon and more,
-  right?"). If it finds nothing, try the county name with the state.
+  For each, run `leads.py find-market "<what they said>"` (free: a built-in
+  catalog of US counties, cities and ZIP codes, with populations). Pick the
+  match and confirm it by name ("Hillsborough County, FL, 1.46 million
+  people, right?").
 - Header "Which agents", single: "Everyone with an active listing" /
   "2+ active listings (about 40%, the active ones)" / "5+ active listings
   (about 8%, the heavy hitters)". That's `--min-listings 1|2|5`.
@@ -284,7 +284,7 @@ leads.py app                         the whole thing as a page in the browser
 leads.py keys [--job NAME]           browser page to paste and test the Monid key
 leads.py set-key NAME VALUE          save one key from the chat
 leads.py doctor                      whether the key works, and what can run
-leads.py find-market "Tampa, FL"     check an area has listings, and where they are
+leads.py find-market "Tampa, FL"     look up a county, city or ZIP code (free)
 leads.py new NAME (--build --market "AREA, ST" ... | --enrich FILE [--map field=Col])
              [--addons all|none|a,b] [--min-listings N] [--min-price N] [--max-price N]
              [--types house,condo,townhouse,multifamily] [--producer-min N]

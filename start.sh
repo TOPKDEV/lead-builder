@@ -31,4 +31,5 @@ if [ ! -x .venv/bin/python ] || ! cmp -s requirements.txt "$STAMP"; then
   cp requirements.txt "$STAMP"
 fi
 
+export PYTHONUTF8=1
 exec .venv/bin/python leads.py app

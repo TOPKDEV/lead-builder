@@ -36,15 +36,15 @@ def write_env(updates: dict[str, str]) -> None:
     A missing .env starts from .env.example, so its explanations come along."""
     path = settings.ENV_FILE
     example = settings.ROOT / ".env.example"
-    lines = (path.read_text() if path.exists() else
-             example.read_text() if example.exists() else "").splitlines()
+    lines = (path.read_text(encoding="utf-8") if path.exists() else
+             example.read_text(encoding="utf-8") if example.exists() else "").splitlines()
     remaining = dict(updates)
     for i, line in enumerate(lines):
         name = line.split("=", 1)[0].strip()
         if "=" in line and name in remaining and not line.lstrip().startswith("#"):
             lines[i] = f"{name}={remaining.pop(name)}"
     lines += [f"{k}={v}" for k, v in remaining.items()]
-    path.write_text("\n".join(lines) + "\n")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     try:
         os.chmod(path, 0o600)
     except OSError:

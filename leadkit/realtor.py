@@ -25,7 +25,7 @@ What the real answers showed (2026-10-27):
 """
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
 from leadkit import monid, settings
 from leadkit.models import Listing
@@ -85,48 +85,94 @@ def seed_bands(min_price: int | None, max_price: int | None) -> list[tuple[int, 
     return out
 
 
-def zillow_count(location: str, lo: int, hi: int | None, types, usage=None) -> int:
-    """Active listings Zillow has in a band, up to FULL."""
-    body = {"location": location, "minPrice": lo, "limit": FULL,
-            "homeTypes": sorted({t for k in types for t in ZILLOW_TYPES.get(k, [])})}
+def zillow_query(location: str, types=None, lo: int | None = None, hi: int | None = None,
+                 usage=None, slow_fallback: bool = False) -> list[dict] | None:
+    """Zillow's search, up to FULL listings, or None if it couldn't answer.
+
+    Its "ibex" route answers in 5-8 s but takes one home type at most, so
+    with several it's asked about every kind of home (a slight overcount,
+    which only makes bands a little smaller). It's tried twice. The default
+    route takes all the types, but on 2026-10-27 it took 35-65 s and often
+    failed, so it's only the fallback when `slow_fallback` is set (the area
+    check, where one answer matters more than speed). For a count, a band
+    that gets no answer is searched on Realtor.com anyway."""
+    wanted = sorted({t for k in (types or []) for t in ZILLOW_TYPES.get(k, [])})
+    base = {"location": location, "limit": FULL}
+    if lo is not None:
+        base["minPrice"] = lo
     if hi is not None:
-        body["maxPrice"] = hi
-    for attempt in range(2):
-        res = monid.run("anyapi", "/zillow.search", body, timeout=120)
+        base["maxPrice"] = hi
+    for route in ("ibex", "ibex") + (("default",) if slow_fallback else ()):
+        body = dict(base)
+        if route == "ibex":
+            body["route"] = "ibex"
+            if len(wanted) == 1:
+                body["homeTypes"] = wanted
+        elif wanted:
+            body["homeTypes"] = wanted
+        try:
+            # The fast route answers in 5-8 s when it's well; don't sit on it.
+            res = monid.run("anyapi", "/zillow.search", body, timeout=25 if route == "ibex" else 90, attempts=1)
+        except monid.MonidError:
+            raise
+        except Exception:
+            continue
         if usage:
             usage("zillow", 1, _cost(res, settings.PRICES["zillow_search"]))
         try:
-            return len(_items(res))
+            return _items(res)
         except RuntimeError:
-            if attempt:
-                raise
+            continue
+    return None
+
+
+def zillow_count(location: str, lo: int, hi: int | None, types, usage=None) -> int | None:
+    """Active listings Zillow has in a band, up to FULL; None if it couldn't say."""
+    items = zillow_query(location, types, lo, hi, usage)
+    return None if items is None else len(items)
 
 
 def plan(location: str, min_price: int | None, max_price: int | None, types,
-         usage=None, workers: int = 8) -> list[tuple[int, int | None, int]]:
+         usage=None, workers: int = 8, on_count=None) -> list[tuple[int, int | None, int | None]]:
     """[(lo, hi, expected)]: price bands that each come back from one search,
     with Zillow's count for each, lowest first. Neighbouring bands with few
-    listings are merged, since every search has a fee of its own."""
-    pending, done = seed_bands(min_price, max_price), []
+    listings are merged, since every search has a fee of its own. A band
+    Zillow couldn't count has expected None: it's searched on Realtor.com
+    anyway and split there if it comes back full."""
+    done = []
+    # A queue, not waves: a band's halves are counted as soon as it's split,
+    # so one slow answer (Zillow sometimes takes a minute) holds up only itself.
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        while pending:
-            counts = list(ex.map(lambda b: zillow_count(location, b[0], b[1], types, usage), pending))
-            again = []
-            for (lo, hi), n in zip(pending, counts):
-                if n >= TARGET and splittable(lo, hi):
-                    again += split(lo, hi)
+        running = {ex.submit(zillow_count, location, lo, hi, types, usage): (lo, hi)
+                   for lo, hi in seed_bands(min_price, max_price)}
+        while running:
+            finished, _ = wait(running, return_when=FIRST_COMPLETED)
+            for future in finished:
+                (lo, hi), n = running.pop(future), future.result()
+                splitting = n is not None and n >= TARGET and splittable(lo, hi)
+                if on_count:
+                    on_count(lo, hi, n, splitting)
+                if splitting:
+                    for half in split(lo, hi):
+                        running[ex.submit(zillow_count, location, *half, types, usage)] = half
                 else:
                     done.append((lo, hi, n))
-            pending = again
     done.sort(key=lambda b: b[0])
-    merged: list[tuple[int, int | None, int]] = []
+    merged: list[tuple[int, int | None, int | None]] = []
     for lo, hi, n in done:
-        if merged and merged[-1][2] + n < TARGET and merged[-1][1] is not None and merged[-1][1] + 1 >= lo:
+        if (merged and n is not None and merged[-1][2] is not None and merged[-1][2] + n < TARGET
+                and merged[-1][1] is not None and merged[-1][1] + 1 >= lo):
             mlo, _, mn = merged.pop()
             merged.append((mlo, hi, mn + n))
         else:
             merged.append((lo, hi, n))
     return merged
+
+
+def _brokerage(name) -> str | None:
+    """Realtor.com prints "UNKNOWN NAME" when it doesn't have one."""
+    name = (name or "").strip()
+    return None if not name or name.upper() in ("UNKNOWN", "UNKNOWN NAME", "N/A", "NONE") else name
 
 
 def to_listing(item: dict, market: str) -> Listing:
@@ -137,7 +183,7 @@ def to_listing(item: dict, market: str) -> Listing:
         price=item.get("price"), beds=item.get("beds"), baths=item.get("baths"), sqft=item.get("sqft"),
         days_on_market=item.get("daysOnMarket"), property_type=item.get("propertyType") or "",
         listing_url=item.get("url") or "", agent_name=(item.get("agentName") or "").strip() or None,
-        agent_phone=item.get("agentPhone") or None, agent_brokerage=item.get("brokerName") or None,
+        agent_phone=item.get("agentPhone") or None, agent_brokerage=_brokerage(item.get("brokerName")),
         agent_email=(item.get("agentEmail") or "").strip().lower() or None)
 
 

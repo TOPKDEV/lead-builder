@@ -41,41 +41,18 @@ def parse_addons(chosen) -> list[str]:
 # --- markets ----------------------------------------------------------------
 
 def find_markets(query: str) -> list[dict]:
-    """The area as typed, if listings turn up there, with a few of the
-    cities they're in so the person can confirm it's the right place. One
-    Zillow search: under a tenth of a cent."""
-    from leadkit import monid, realtor
-    query = " ".join(query.split())
-    if not query:
-        return []
-    if not settings.MONID_API_KEY:
-        raise ActionError("Finding an area needs the Monid key. Run: python leads.py keys")
-    items = []
-    for _ in range(2):  # an empty answer is sometimes a hiccup, not an empty area
-        try:
-            res = monid.run("anyapi", "/zillow.search", {"location": query, "limit": realtor.FULL}, timeout=120)
-            items = realtor._items(res)
-        except monid.MonidError as e:
-            raise ActionError(f"Couldn't look that area up: {e}") from e
-        except Exception:
-            continue
-        if items:
-            break
-    if not items:
-        return []
-    cities = []
-    for i in items:
-        place = ", ".join(x for x in (i.get("city"), i.get("state")) if x)
-        if place and place not in cities:
-            cities.append(place)
-    more = "+" if len(items) >= realtor.FULL else ""
-    return [{"code": query, "label": query,
-             "kind": f"{len(items)}{more} listings, in {', '.join(cities[:3])}{' and more' if len(cities) > 3 else ''}"}]
+    """Counties, cities and ZIP codes matching what the person typed, from
+    the built-in catalog of US places (free and instant)."""
+    from leadkit import places
+    return [{**p, "kind": f"{p['kind']}, {p['detail']}"} for p in places.search(" ".join(query.split()))]
 
 
 def market(code: str) -> dict:
     """An area as a job stores it."""
+    # The page sends a ZIP missing from the catalog as "zip:33327".
     label = " ".join((code or "").split())
+    if label.lower().startswith("zip:"):
+        label = label[4:].strip()
     if not label:
         raise ActionError("Name an area: a county, city or ZIP code, e.g. \"Broward County, FL\".")
     return {"label": label}

@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 
-from leadkit import emailverify, phones, settings
+from leadkit import emailverify, phones, realtor, settings
 from leadkit.jobs import Job
 
 P = settings.PRICES
@@ -35,6 +35,18 @@ LISTING_OVERHEAD = 1.2
 # Items per second at the default worker counts, rough.
 RATE = {"fix_phones": 0.5, "listing_searches": 0.5, "emails": 0.8, "deep_emails": 0.075, "verify_emails": 6.0,
         "verify_phones": 2.0, "volume": 0.4}
+
+
+def listings_per_agent(listings: float) -> float:
+    """How many listings collapse into one agent. Measured: 1.12 in ZIP 33134
+    (211 listings), 1.19 in Weston, FL (378), 2.15 over three South Florida
+    counties (42,341): small areas have mostly one listing per agent there.
+    Between 300 and 40,000 listings it's interpolated on a log scale."""
+    if listings <= 300:
+        return 1.15
+    if listings >= 40_000:
+        return 2.15
+    return 1.15 + (math.log(listings) - math.log(300)) / (math.log(40_000) - math.log(300)) * 1.0
 
 
 def _search_price() -> float:
@@ -109,6 +121,54 @@ def format_fix_summary(job: Job, s: dict) -> str:
             f"To do it: python leads.py add {job.name} fix_phones")
 
 
+# For the rough range shown while a list is being set up, before any count:
+# active listings per resident (2026-10-27: Weston, FL had 378 for 68,107
+# people; South Florida runs higher than most of the country, hence the wide
+# range).
+LISTINGS_PER_PERSON = (0.002, 0.008)
+# Share of agents a phone check covers when limited to some of them.
+PHONE_SCOPE_SHARE = {"all": 1.0, "emails": 0.85, "producers": PRODUCER_SHARE}
+
+
+def rough(mode: str, population: int = 0, rows: int = 0, min_listings: int = 1,
+          addons=(), phones_for: str = "all") -> dict:
+    """A free, instant price range for a list not created yet: from the
+    areas' population (a new list) or the file's rows (their own list).
+    The exact price comes from quote(), after counting, before any spend."""
+    addons = set(addons)
+    share = MIN_LISTINGS_SHARE.get(int(min_listings or 1), 0.05)
+    if mode == "build":
+        listings = [population * r for r in LISTINGS_PER_PERSON]
+        agents = [n / listings_per_agent(n) * share for n in listings]
+    else:
+        listings, agents = [0, 0], [rows * 0.95, rows]  # merged duplicates
+    search = _search_price()
+    per_listing = P["realtor_call"] / realtor.TARGET + LISTING_OVERHEAD * P["realtor_listing"]
+    found_share = (1 - LISTING_EMAIL_SHARE) if mode == "build" else 1.0
+    with_email = LISTING_EMAIL_SHARE if mode == "build" else settings.EMAIL_HIT_RATE
+    unit = {  # dollars per agent (or per listing), for each step it would run
+        "listings": ("Get listings", per_listing, "listing"),
+        "emails": ("Find emails", found_share * 2 * search, "agent"),
+        "verify_emails": ("Verify emails", with_email * emailverify.price(), "agent"),
+        "volume": ("Top producers (homes.com)", 1.5 * search + 1.1 * P["monid_call"], "agent"),
+        "verify_phones": ("Check phone numbers", PHONE_SCOPE_SHARE.get(phones_for, 1.0) * phones.lookup_price(), "agent"),
+    }
+    wanted = (["listings"] if mode == "build" else []) + [s for s in unit if s in addons and s != "listings"]
+    lines = []
+    for step in wanted:
+        label, price, per = unit[step]
+        n = listings if per == "listing" else agents
+        lines.append({"step": step, "label": label, "low": round(n[0] * price, 2), "high": round(n[1] * price, 2)})
+    return {"listings": round(sum(listings) / 2), "agents": round(sum(agents) / 2),
+            "low": round(sum(l["low"] for l in lines), 2), "high": round(sum(l["high"] for l in lines), 2),
+            "lines": lines,
+            "note": ("A rough range from the areas' population. The exact price comes next, once the "
+                     "listings are counted (a few cents), and nothing else is spent until you approve it."
+                     if mode == "build" else
+                     "A rough range for this many rows. The exact price comes next, and nothing is spent "
+                     "until you approve it.")}
+
+
 def spend(usage: dict) -> dict[str, float]:
     """Dollars actually spent so far, by provider."""
     out = {}
@@ -133,7 +193,9 @@ def quote(job: Job) -> dict:
                       "cost": round(count * unit_cost, 2), "hours": round(hours, 1)})
 
     if job.mode == "build":
-        bands, expected = store.q("SELECT COUNT(*), COALESCE(SUM(expected), 0) FROM bands WHERE status IS NULL")[0]
+        # A band Zillow couldn't count is priced as a full one.
+        bands, expected = store.q("SELECT COUNT(*), COALESCE(SUM(COALESCE(expected, ?)), 0) FROM bands "
+                                  "WHERE status IS NULL", (realtor.TARGET,))[0]
         found = store.one("SELECT COUNT(*) FROM listings") or 0
         listings = found + expected
         per_band = expected / bands if bands else 0
@@ -145,7 +207,7 @@ def quote(job: Job) -> dict:
         else:
             estimated = True
             share = MIN_LISTINGS_SHARE.get(job.min_listings, 0.05)
-            agents = math.ceil(listings / settings.LISTINGS_PER_AGENT * share)
+            agents = math.ceil(listings / listings_per_agent(listings) * share)
     else:
         listings = 0
         agents = store.one("SELECT COUNT(*) FROM agents") or 0

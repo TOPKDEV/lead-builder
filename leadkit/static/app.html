@@ -3,538 +3,992 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lead List Builder</title>
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:,">
+<title>Lead Builder</title>
 <style>
 :root {
-  --bg: #f5f4f0; --card: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e0d8;
-  --soft: #efede7; --accent: #2b59c3; --accent-ink: #ffffff; --accent-soft: #e8eefb;
-  --ok: #1d7a3c; --ok-soft: #e5f3ea; --warn: #9a6200; --warn-soft: #fbf1dc; --bad: #b42318; --bad-soft: #fbe9e7;
-  --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+  --bg: #f6f5f1; --bg2: #efede6; --card: #ffffff; --ink: #14151a; --muted: #5f6270; --faint: #8b8e9b;
+  --line: #e6e3da; --line2: #d7d3c7; --soft: #f1efe8;
+  --accent: #4535f0; --accent-hi: #5a4bff; --accent-ink: #ffffff; --accent-soft: #ecebff; --accent-line: #c9c5ff;
+  --ok: #17803d; --ok-soft: #e3f4ea; --warn: #9a5b00; --warn-soft: #fcf0d6; --bad: #bf2a1c; --bad-soft: #fcebe8;
+  --shadow: 0 1px 2px rgba(20,21,26,.05), 0 8px 24px -12px rgba(20,21,26,.12);
+  --shadow-lg: 0 2px 4px rgba(20,21,26,.06), 0 24px 48px -16px rgba(20,21,26,.22);
+  --r: 16px; --r-sm: 10px;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141413; --card: #1e1e1c; --ink: #ecebe6; --muted: #a3a29c; --line: #34332f;
-    --soft: #262623; --accent: #7a9cff; --accent-ink: #0f1424; --accent-soft: #1f2843;
-    --ok: #5fc27e; --ok-soft: #17301f; --warn: #e3b04b; --warn-soft: #33290f; --bad: #ff8577; --bad-soft: #3a1b18;
-    --shadow: none;
+    --bg: #0f1013; --bg2: #14151a; --card: #181a20; --ink: #eeeef2; --muted: #a2a5b3; --faint: #737688;
+    --line: #272a33; --line2: #343846; --soft: #1e2028;
+    --accent: #8f8cff; --accent-hi: #a3a1ff; --accent-ink: #0d0c24; --accent-soft: #22224a; --accent-line: #3b3a86;
+    --ok: #55d184; --ok-soft: #14291d; --warn: #f0b955; --warn-soft: #2f2410; --bad: #ff8b7e; --bad-soft: #351916;
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset; --shadow-lg: 0 24px 48px -16px rgba(0,0,0,.6);
   }
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); }
-body { font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 0 16px 80px; }
-header { max-width: 860px; margin: 0 auto; padding: 22px 0 8px; display: flex; align-items: center; gap: 12px; }
-header .logo { font-weight: 700; font-size: 18px; text-decoration: none; color: var(--ink); }
-header nav { margin-left: auto; display: flex; gap: 6px; }
-header nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 6px 10px; border-radius: 8px; }
-header nav a:hover, header nav a.on { background: var(--soft); color: var(--ink); }
-main { max-width: 860px; margin: 0 auto; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans);
+  background-image: radial-gradient(900px 380px at 50% -140px, var(--accent-soft), transparent 70%);
+  background-repeat: no-repeat; min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
 a { color: var(--accent); }
-h1 { font-size: 26px; line-height: 1.2; margin: 18px 0 6px; }
-h2 { font-size: 18px; margin: 0 0 6px; }
-h3 { font-size: 15px; margin: 0 0 4px; }
-p { margin: 4px 0; }
-.lead { color: var(--muted); margin: 0 0 18px; }
-.muted { color: var(--muted); }
-.small { font-size: 13px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin: 0 0 14px; box-shadow: var(--shadow); }
-.step-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 26px 0 8px; }
-.choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.choice { text-align: left; cursor: pointer; background: var(--card); border: 2px solid var(--line); border-radius: var(--radius); padding: 16px 18px; color: var(--ink); font: inherit; }
-.choice:hover { border-color: var(--accent); }
-.choice.on { border-color: var(--accent); background: var(--accent-soft); }
-.choice strong { display: block; font-size: 16px; margin-bottom: 2px; }
-.choice span { color: var(--muted); font-size: 14px; }
-.check { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--line); cursor: pointer; }
-.check:first-child { border-top: 0; padding-top: 0; }
-.check input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent); flex: none; }
-.check .price { font-size: 13px; color: var(--muted); }
-.sub { margin: 10px 0 0; padding: 12px 14px; background: var(--soft); border-radius: 10px; font-size: 14px; }
-.sub label { display: flex; gap: 8px; align-items: center; margin: 4px 0; cursor: pointer; }
-.sub label.disabled { opacity: .45; cursor: default; }
-.sub input { accent-color: var(--accent); }
-.radios label { display: flex; gap: 10px; align-items: center; padding: 6px 0; cursor: pointer; }
-.radios input { accent-color: var(--accent); width: 18px; height: 18px; }
-input[type=text], input[type=password], input[type=number], select {
-  font: inherit; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
-input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
-.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.row > .grow { flex: 1 1 220px; }
-button.btn { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 11px 18px; cursor: pointer; background: var(--accent); color: var(--accent-ink); }
-button.btn:disabled { opacity: .5; cursor: default; }
-button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
-button.danger { background: var(--bad-soft); color: var(--bad); }
-button.link { background: none; border: 0; color: var(--accent); padding: 0; font: inherit; cursor: pointer; }
-.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.chip { background: var(--accent-soft); color: var(--ink); border-radius: 99px; padding: 5px 8px 5px 12px; font-size: 14px; display: inline-flex; gap: 6px; align-items: center; }
-.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
-.results { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.results button { display: flex; width: 100%; justify-content: space-between; gap: 10px; text-align: left; padding: 10px 12px; border: 0; border-top: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; cursor: pointer; }
-.results button:first-child { border-top: 0; }
-.results button:hover { background: var(--soft); }
-.drop { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; color: var(--muted); }
-.drop.over, .drop:hover { border-color: var(--accent); color: var(--ink); }
-.mapping { display: grid; grid-template-columns: 140px 1fr; gap: 8px 12px; align-items: center; margin-top: 12px; }
-.table-wrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; }
-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-th, td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); white-space: nowrap; }
-th { border-top: 0; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; background: var(--soft); }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-tr.total td { font-weight: 700; }
-.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--soft); color: var(--muted); }
-.pill.ok { background: var(--ok-soft); color: var(--ok); }
-.pill.warn { background: var(--warn-soft); color: var(--warn); }
-.pill.bad { background: var(--bad-soft); color: var(--bad); }
-.pill.run { background: var(--accent-soft); color: var(--accent); }
-.jobs a.card { display: flex; gap: 12px; align-items: center; text-decoration: none; color: var(--ink); }
-.jobs a.card:hover { border-color: var(--accent); }
-.jobs .meta { color: var(--muted); font-size: 14px; }
-.jobs .right { margin-left: auto; text-align: right; }
-.bar { height: 10px; background: var(--soft); border-radius: 99px; overflow: hidden; margin: 10px 0 6px; }
-.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .6s; }
-.bar.spend > i { background: var(--ok); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-.tile { background: var(--soft); border-radius: 12px; padding: 12px 14px; }
-.tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
-.tile span { font-size: 13px; color: var(--muted); }
-.files .file { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
-.files .file:first-child { border-top: 0; }
-.files .file div { flex: 1; }
-.note { border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; }
-.note.warn { background: var(--warn-soft); }
-.note.bad { background: var(--bad-soft); }
-.note.ok { background: var(--ok-soft); }
-.note.info { background: var(--accent-soft); }
-pre.log { background: var(--soft); border-radius: 10px; padding: 12px; font-size: 12px; overflow-x: auto; max-height: 280px; white-space: pre-wrap; }
-details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
-.key-card label { display: block; font-size: 13px; color: var(--muted); margin-top: 10px; }
-.key-card input { margin-top: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
-.spinner { width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; vertical-align: -3px; margin-right: 8px; }
+h1, h2, h3, p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent-line); outline-offset: 2px; }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .small { font-size: 13px; } .mono { font-family: var(--mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* shell */
+.top { position: sticky; top: 0; z-index: 30; backdrop-filter: saturate(1.4) blur(14px); background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.top-in { max-width: 920px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 750; letter-spacing: -.02em; font-size: 17px; color: var(--ink); text-decoration: none; }
+.mark { width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: var(--bg); display: grid; place-items: center; }
+.mark svg { width: 18px; height: 18px; }
+.nav { margin-left: auto; display: flex; gap: 4px; }
+.nav a { position: relative; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 550; padding: 7px 12px; border-radius: 99px; }
+.nav a:hover { color: var(--ink); background: var(--soft); }
+.nav a.on { color: var(--ink); background: var(--card); box-shadow: 0 0 0 1px var(--line); }
+.nav .dot { position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 0 2px var(--bg); }
+main { max-width: 920px; margin: 0 auto; padding: 34px 20px 80px; }
+main.pad-bar { padding-bottom: 190px; }
+.page-title { font-size: clamp(28px, 5vw, 40px); line-height: 1.08; letter-spacing: -.035em; font-weight: 780; }
+.page-lead { color: var(--muted); font-size: 17px; margin-top: 10px; max-width: 60ch; }
+.back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; text-decoration: none; margin-bottom: 14px; font-weight: 550; }
+.back:hover { color: var(--ink); }
+svg.i { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* controls */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 12px; padding: 11px 20px; font-weight: 650; background: var(--accent); color: var(--accent-ink); text-decoration: none; transition: transform .08s, background .15s, box-shadow .15s; box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 6px 16px -8px var(--accent); white-space: nowrap; }
+.btn:hover:not(:disabled) { background: var(--accent-hi); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn.lg { padding: 14px 26px; font-size: 16px; border-radius: 14px; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line2); box-shadow: none; }
+.btn.ghost:hover:not(:disabled) { background: var(--soft); }
+.btn.danger { background: var(--bad-soft); color: var(--bad); box-shadow: none; border-color: transparent; }
+.btn.sm { padding: 7px 14px; font-size: 14px; border-radius: 10px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.input { width: 100%; padding: 11px 14px; border: 1px solid var(--line2); border-radius: 12px; background: var(--card); color: var(--ink); }
+.input:focus { outline: 3px solid var(--accent-line); outline-offset: 0; border-color: var(--accent); }
+select.input { appearance: none; padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow); }
+.card + .card, .card + .term, .term + .card, .note + .card, .card + .note { margin-top: 16px; }
+.note { border-radius: var(--r); padding: 18px 20px; background: var(--accent-soft); }
+.note.ok { background: var(--ok-soft); } .note.warn { background: var(--warn-soft); } .note.bad { background: var(--bad-soft); }
+.note h2, .card h2 { font-size: 19px; letter-spacing: -.02em; }
+.note p, .card p { margin-top: 6px; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row .grow { flex: 1 1 200px; min-width: 0; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: var(--soft); color: var(--muted); letter-spacing: .01em; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); } .pill.run { background: var(--accent-soft); color: var(--accent); }
+.pill .pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line2); border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; flex: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); }
-.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
-.budget { max-width: 160px; }
-@media (max-width: 560px) { .mapping { grid-template-columns: 1fr; } h1 { font-size: 22px; } }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
+th { border-top: 0; background: var(--soft); color: var(--muted); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+tr.total td { font-weight: 750; background: var(--soft); }
+.bar { height: 10px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-hi)); transition: width .6s ease; }
+.bar.spend > i { background: linear-gradient(90deg, var(--ok), color-mix(in srgb, var(--ok) 60%, white)); }
+.bar.indet > i { width: 35% !important; animation: slide 1.3s ease-in-out infinite; }
+@keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+/* toasts */
+.toasts { position: fixed; z-index: 100; top: 70px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; width: min(440px, calc(100vw - 24px)); pointer-events: none; }
+.toast { pointer-events: auto; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 12px 16px; font-size: 14.5px; box-shadow: var(--shadow-lg); animation: tin .25s ease; display: flex; gap: 10px; align-items: flex-start; }
+.toast.bad { background: var(--bad); color: #fff; } .toast.ok { background: var(--ok); color: #fff; }
+@keyframes tin { from { opacity: 0; transform: translateY(-8px); } }
+
+/* home */
+.hero { margin-bottom: 26px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; justify-content: space-between; }
+.onboard { border: 1px solid var(--accent-line); background: linear-gradient(135deg, var(--accent-soft), var(--card)); margin-bottom: 20px; }
+.onboard ol { list-style: none; counter-reset: o; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.onboard li { counter-increment: o; display: flex; gap: 12px; align-items: center; color: var(--muted); }
+.onboard li::before { content: counter(o); width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 700; display: grid; place-items: center; flex: none; }
+.jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+a.job { display: flex; flex-direction: column; gap: 14px; text-decoration: none; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; box-shadow: var(--shadow); transition: transform .15s, border-color .15s, box-shadow .15s; min-width: 0; }
+a.job:hover { transform: translateY(-2px); border-color: var(--accent-line); box-shadow: var(--shadow-lg); }
+a.job .t { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+a.job h2 { font-size: 18px; letter-spacing: -.02em; overflow-wrap: anywhere; }
+a.job .d { color: var(--muted); font-size: 14px; margin-top: 3px; overflow-wrap: anywhere; }
+a.job .s { display: flex; gap: 22px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: auto; }
+a.job .s b { display: block; font-size: 20px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+a.job .s span { font-size: 12px; color: var(--muted); }
+.empty { text-align: center; padding: 48px 24px; border: 2px dashed var(--line2); border-radius: var(--r); color: var(--muted); }
+
+/* wizard */
+.wiz { counter-reset: s; margin-top: 26px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.wiz > *, main > * { min-width: 0; }
+.step { counter-increment: s; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow); }
+.step > h2 { display: flex; gap: 12px; align-items: center; font-size: 19px; letter-spacing: -.02em; }
+.step > h2::before { content: counter(s); width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-size: 13px; font-weight: 700; flex: none; }
+.step > .sub { color: var(--muted); font-size: 14.5px; margin: 6px 0 0 40px; }
+.step > .body { margin-top: 16px; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mode { text-align: left; background: var(--bg2); border: 2px solid transparent; border-radius: 14px; padding: 18px; display: grid; gap: 4px; transition: border-color .15s, background .15s, transform .1s; }
+.mode:hover { border-color: var(--accent-line); }
+.mode[aria-pressed=true] { border-color: var(--accent); background: var(--accent-soft); }
+.mode .ic { width: 40px; height: 40px; border-radius: 12px; background: var(--card); display: grid; place-items: center; color: var(--accent); margin-bottom: 8px; box-shadow: 0 0 0 1px var(--line); }
+.mode .ic svg { width: 22px; height: 22px; }
+.mode b { font-size: 17px; letter-spacing: -.015em; } .mode span { color: var(--muted); font-size: 14.5px; }
+.tagbox { position: relative; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; min-height: 54px; border: 1px solid var(--line2); border-radius: 14px; background: var(--bg); cursor: text; transition: border-color .15s, box-shadow .15s; }
+.tagbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); background: var(--card); }
+.tagbox > input { flex: 1 1 160px; min-width: 120px; border: 0; outline: 0; background: transparent; padding: 6px 2px; font-size: 16px; }
+.tagbox .busy { margin-left: auto; }
+.tag { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px; padding: 4px 4px 4px 10px; font-size: 14.5px; animation: pop .18s ease; max-width: 100%; }
+@keyframes pop { from { transform: scale(.85); opacity: 0; } }
+.tag .k { font-size: 10.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+.tag .l { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag .p { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.tag button { border: 0; background: transparent; width: 24px; height: 24px; border-radius: 7px; color: var(--muted); display: grid; place-items: center; padding: 0; }
+.tag button:hover { background: var(--card); color: var(--bad); }
+.pop { position: absolute; z-index: 20; left: -1px; right: -1px; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; background: var(--card); border: 1px solid var(--line2); border-radius: 14px; box-shadow: var(--shadow-lg); max-height: 330px; overflow-y: auto; }
+.pop li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; }
+.pop li[aria-selected=true] { background: var(--accent-soft); }
+.pop li.chosen { opacity: .5; }
+.pop li.msg { color: var(--muted); cursor: default; font-size: 14px; }
+.pop .badge { font-size: 10.5px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; padding: 3px 7px; border-radius: 7px; background: var(--soft); color: var(--muted); min-width: 52px; text-align: center; flex: none; }
+.pop .badge.county { background: var(--accent-soft); color: var(--accent); } .pop .badge.city { background: var(--ok-soft); color: var(--ok); } .pop .badge.zip { background: var(--warn-soft); color: var(--warn); }
+.pop .tx { min-width: 0; flex: 1; } .pop .tx b { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pop .tx small { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pop .pp { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.hintline { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 13.5px; }
+.try { border: 1px dashed var(--line2); background: transparent; border-radius: 99px; padding: 3px 11px; font-size: 13px; color: var(--muted); }
+.try:hover { color: var(--accent); border-color: var(--accent); }
+.areas-sum { margin-top: 12px; font-size: 14px; color: var(--muted); }
+.areas-sum b { color: var(--ink); }
+.opts { display: grid; gap: 10px; }
+.opt { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border: 2px solid var(--line); border-radius: 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+.opt:hover { border-color: var(--accent-line); }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt:has(input:disabled) { opacity: .5; cursor: not-allowed; }
+.opt input { accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+.opt b { display: block; font-weight: 650; } .opt small { display: block; color: var(--muted); font-size: 13.5px; }
+.opt .share { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.drop { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 38px 20px; border: 2px dashed var(--line2); border-radius: 16px; background: var(--bg); cursor: pointer; transition: border-color .15s, background .15s, transform .15s; }
+.drop:hover, .drop:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); border-style: solid; transform: scale(1.01); }
+.drop .up { width: 52px; height: 52px; border-radius: 16px; background: var(--card); box-shadow: 0 0 0 1px var(--line); display: grid; place-items: center; color: var(--accent); margin-bottom: 6px; transition: transform .2s; }
+.drop.over .up { transform: translateY(-4px); }
+.drop .up svg { width: 26px; height: 26px; }
+.drop b { font-size: 17px; }
+.filechip { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; background: var(--ok-soft); }
+.filechip .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--card); color: var(--ok); display: grid; place-items: center; flex: none; }
+.filechip b { overflow-wrap: anywhere; }
+.map { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-top: 18px; }
+.map label { display: grid; gap: 5px; font-size: 13px; font-weight: 650; color: var(--muted); }
+.map label.miss select { border-color: var(--warn); }
+.sub-h { font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin: 20px 0 8px; }
+.addon { border: 2px solid var(--line); border-radius: 16px; padding: 16px 18px; transition: border-color .15s, background .15s; background: var(--card); }
+.addon.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 55%, var(--card)); }
+.addon + .addon { margin-top: 12px; }
+.addon-h { display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
+.addon-h .ic { width: 38px; height: 38px; border-radius: 11px; background: var(--soft); color: var(--muted); display: grid; place-items: center; flex: none; }
+.addon.on .addon-h .ic { background: var(--accent); color: var(--accent-ink); }
+.addon-h .tx { flex: 1; min-width: 0; } .addon-h b { display: block; font-size: 16.5px; letter-spacing: -.01em; }
+.addon-h .d { color: var(--muted); font-size: 14.5px; margin-top: 2px; }
+.addon-h .pr { display: inline-block; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); background: var(--soft); border-radius: 99px; padding: 3px 10px; }
+.sw { position: relative; width: 46px; height: 28px; flex: none; margin-top: 4px; }
+.sw input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.sw i { position: absolute; inset: 0; border-radius: 99px; background: var(--line2); transition: background .2s; }
+.sw i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.sw input:checked + i { background: var(--accent); } .sw input:checked + i::after { transform: translateX(18px); }
+.sw input:focus-visible + i { outline: 3px solid var(--accent-line); outline-offset: 2px; }
+.addon-sub { margin: 14px 0 0 52px; padding: 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); display: grid; gap: 8px; }
+.addon-sub .opt { padding: 10px 12px; border-width: 1px; }
+.addon-sub h4 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 650; }
+.addon-sub p { font-size: 13.5px; color: var(--muted); margin: 0; }
+.nameinp { max-width: 420px; }
+
+/* sticky bar */
+.dock { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); pointer-events: none; }
+.dock-in { pointer-events: auto; max-width: 920px; margin: 0 auto; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(16px) saturate(1.4); border: 1px solid var(--line2); border-radius: 20px; box-shadow: var(--shadow-lg); }
+.dock-main { display: flex; align-items: center; gap: 16px; padding: 12px 14px 12px 20px; }
+.est { flex: 1; min-width: 0; }
+.est .lab { font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--faint); }
+.est .val { font-size: 26px; font-weight: 780; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.est .val small { font-size: 14px; font-weight: 600; color: var(--muted); letter-spacing: 0; margin-right: 4px; }
+.est .sub { font-size: 12.5px; color: var(--muted); }
+.est .hint { font-size: 15px; color: var(--muted); font-weight: 550; padding: 6px 0; }
+.shim { display: inline-block; width: 150px; height: 26px; border-radius: 8px; background: linear-gradient(90deg, var(--soft), var(--line), var(--soft)); background-size: 200% 100%; animation: shim 1.2s linear infinite; vertical-align: middle; }
+@keyframes shim { to { background-position: -200% 0; } }
+.dock-detail { border-top: 1px solid var(--line); padding: 14px 20px 16px; max-height: 46vh; overflow-y: auto; }
+.dock-detail table { margin-top: 8px; }
+.dock-detail td { padding: 7px 0; border-top: 1px solid var(--line); }
+.dock-detail td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.est .short { display: none; }
+.detail-toggle { background: none; border: 0; padding: 0; color: var(--accent); font-size: 12.5px; font-weight: 650; }
+
+/* job */
+.jhead { display: flex; gap: 14px; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+.jhead .page-title { overflow-wrap: anywhere; }
+.price-hero { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 4px 0 16px; }
+.price-hero .big { font-size: clamp(38px, 8vw, 54px); font-weight: 800; letter-spacing: -.045em; line-height: 1; font-variant-numeric: tabular-nums; }
+.budget-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+.money-in { display: flex; align-items: center; border: 1px solid var(--line2); border-radius: 12px; background: var(--bg); padding-left: 12px; }
+.money-in:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.money-in input { border: 0; outline: 0; background: transparent; width: 84px; padding: 11px 12px 11px 4px; font-weight: 700; font-size: 17px; }
+.runtop { display: flex; gap: 14px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.runtop h2 { font-size: 22px; }
+.meter { margin-top: 18px; display: grid; gap: 6px; }
+.meter .l { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.meter .l b { color: var(--ink); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 16px; }
+.tile { background: var(--bg2); border-radius: 14px; padding: 14px 16px; }
+.tile b { display: block; font-size: 28px; font-weight: 780; letter-spacing: -.035em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.tile span { font-size: 13px; color: var(--muted); }
+.file { display: flex; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.file:first-child { border-top: 0; }
+.file .tx { flex: 1 1 200px; min-width: 0; } .file .tx b { display: block; }
+.file .tx small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.legal { margin-top: 18px; font-size: 13px; color: var(--muted); padding: 12px 14px; background: var(--bg2); border-radius: 12px; }
+details > summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; padding: 4px 0; }
+pre.raw { background: var(--bg2); border-radius: 12px; padding: 12px; font: 12px/1.5 var(--mono); max-height: 280px; overflow: auto; white-space: pre-wrap; margin: 8px 0 0; }
+
+/* terminal: always dark */
+.term { background: #0a0e14; color: #c5d1de; border-radius: 16px; overflow: hidden; border: 1px solid #1d2733; box-shadow: var(--shadow-lg), 0 0 0 1px rgba(61,220,132,.04); font-family: var(--mono); }
+.term-h { display: flex; align-items: center; gap: 8px; padding: 11px 14px; background: #101722; border-bottom: 1px solid #1d2733; }
+.term-h i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; } .term-h i:nth-child(2) { background: #febc2e; } .term-h i:nth-child(3) { background: #28c840; }
+.term-h span { margin-left: 8px; font-size: 12.5px; color: #66778a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.term-h em { font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #3ddc84; display: flex; align-items: center; gap: 6px; }
+.term-h em::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; animation: pulse 1.2s infinite; }
+.term-h em.off { color: #66778a; } .term-h em.off::before { background: #66778a; animation: none; }
+.term-b { position: relative; height: min(52vh, 380px); overflow-y: auto; padding: 14px 16px; font-size: 13px; line-height: 1.65; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px); scrollbar-width: thin; scrollbar-color: #2a3646 transparent; }
+.term.small .term-b { height: 240px; }
+.tl { display: flex; gap: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tl .ts { color: #475669; flex: none; } .tl .st { color: #52657a; flex: none; min-width: 7ch; }
+.tl .g { flex: none; width: 1ch; } .tl .tx { min-width: 0; }
+.tl.ok .g, .tl.ok .tx { color: #3ddc84; } .tl.info .g { color: #5ad1e6; } .tl.info .tx { color: #b4c3d3; }
+.tl.warn .g, .tl.warn .tx { color: #f0b429; } .tl.bad .g, .tl.bad .tx { color: #ff6b6b; }
+.tl.new { animation: glow .9s ease-out; }
+@keyframes glow { from { background: rgba(61,220,132,.14); } }
+.tcur { color: #3ddc84; display: flex; gap: 8px; } .tcur u { text-decoration: none; display: inline-block; width: .6em; height: 1.1em; background: #3ddc84; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
+.term.idle .tcur u { animation: none; background: #3a4a5c; }
+@keyframes blink { 50% { opacity: 0; } }
+.jump { position: absolute; right: 14px; bottom: 12px; border: 1px solid #2a3646; background: #101722; color: #8fa3b8; border-radius: 99px; padding: 5px 12px; font: 600 12px var(--sans); box-shadow: 0 6px 16px rgba(0,0,0,.4); }
+.term-w { position: relative; }
+
+/* keys */
+.keycard { padding: 0; overflow: hidden; }
+.keycard .kh { padding: 22px 24px 8px; } .keycard .kh h2 { font-size: 22px; letter-spacing: -.025em; }
+.steps { list-style: none; margin: 0; padding: 8px 24px 22px; counter-reset: k; display: grid; }
+.steps > li { counter-increment: k; position: relative; padding: 14px 0 14px 46px; border-top: 1px solid var(--line); }
+.steps > li:first-child { border-top: 0; }
+.steps > li::before { content: counter(k); position: absolute; left: 0; top: 14px; width: 30px; height: 30px; border-radius: 50%; background: var(--soft); color: var(--muted); font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+.steps > li.done::before { content: "\2713"; background: var(--ok); color: #fff; }
+.steps b { display: block; letter-spacing: -.01em; } .steps li p { color: var(--muted); font-size: 14.5px; margin-top: 2px; }
+.pw { display: flex; gap: 8px; margin-top: 10px; }
+.pw .input { font-family: var(--mono); font-size: 14.5px; }
+.kstat { margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-size: 14.5px; display: flex; gap: 10px; align-items: flex-start; }
+.kstat.ok { background: var(--ok-soft); color: var(--ok); } .kstat.bad { background: var(--bad-soft); color: var(--bad); } .kstat.idle { background: var(--soft); color: var(--muted); }
+.kfoot { padding: 16px 24px; background: var(--bg2); border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  main { padding: 22px 16px 70px; } main.pad-bar { padding-bottom: 200px; }
+  .top-in { padding: 10px 16px; }
+  .modes { grid-template-columns: 1fr; }
+  .step { padding: 18px 16px; } .step > .sub { margin-left: 0; }
+  .addon-sub { margin-left: 0; }
+  .dock { padding: 0 8px calc(8px + env(safe-area-inset-bottom)); }
+  .dock-main { padding: 10px 10px 10px 14px; gap: 10px; }
+  .est .val { font-size: 21px; } .dock .btn { padding: 12px 16px; }
+  .btn.lg { padding: 13px 20px; }
+  .card { padding: 18px 16px; }
+  .steps { padding: 8px 16px 18px; } .keycard .kh { padding: 18px 16px 6px; } .kfoot { padding: 14px 16px; }
+  .tl .st, .tl .ts { display: none; } .est .long { display: none; } .est .short { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001s !important; animation-iteration-count: 1 !important; transition: none !important; } .tcur u { animation: none !important; } }
 </style>
 </head>
 <body>
-<header>
-  <a class="logo" href="#/">Lead List Builder</a>
-  <nav><a href="#/" id="nav-home">Your lists</a><a href="#/keys" id="nav-keys">Keys</a></nav>
-</header>
+<header class="top"><div class="top-in">
+  <a class="brand" href="#/"><span class="mark" id="mark"></span>Lead Builder</a>
+  <nav class="nav"><a href="#/" id="nav-home">Your lists</a><a href="#/keys" id="nav-keys">Key<i class="dot" id="keydot" hidden></i></a></nav>
+</div></header>
 <main id="app"></main>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <script>
+"use strict";
 const TOKEN = "__TOKEN__";
 const $app = document.getElementById("app");
-let home = null, poll = null, wizard = null;
+let home = null, routeSeq = 0, pollTimer = null, W = null;
 
-// --- helpers ---------------------------------------------------------------
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const money = n => "$" + Number(n || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-const cents = n => n < 0.01 ? "$" + Number(n).toFixed(3) : money(n);
-const num = n => Number(n || 0).toLocaleString();
-function toast(msg) {
-  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
-  document.body.appendChild(t); setTimeout(() => t.remove(), 4000);
+// ---- tiny DOM helpers (we build and patch DOM; we never re-render over inputs) ----
+// The browser's append/replaceChildren print a null or false as the word
+// "null"/"false"; the page builds lists with optional parts everywhere, so
+// skip those, as add() below does.
+for (const m of ["append", "replaceChildren"]) {
+  const native = Element.prototype[m];
+  Element.prototype[m] = function (...kids) { return native.apply(this, kids.flat(Infinity).filter(k => k != null && k !== false)); };
 }
-async function api(path, body, opts = {}) {
-  const init = body === undefined ? {} : {
-    method: "POST", headers: {"Content-Type": "application/json", ...(opts.headers || {})},
-    body: opts.raw ? body : JSON.stringify(body)};
+function add(el, kids) { for (const k of kids.flat(Infinity)) { if (k == null || k === false) continue; el.append(k.nodeType ? k : document.createTextNode(String(k))); } }
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k === "text") el.textContent = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k === "style") Object.assign(el.style, v);
+    else if (k === "value" || k === "checked" || k === "disabled" || k === "hidden") el[k] = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  add(el, kids); return el;
+}
+const ICONS = {
+  pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  phone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7M10 17h4"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7.5 8 6 8-6"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  x: '<path d="m6 6 12 12M18 6 6 18"/>',
+  up: '<path d="M12 16V5M7.5 9.5 12 5l4.5 4.5M5 19h14"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  down: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M16 7l3 3M14 9l2 2"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  play: '<path d="M7 5v14l12-7z"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+  chev: '<path d="m6 15 6-6 6 6"/>',
+  eye: '<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  mark: '<path d="M4 7h10M4 12h16M4 17h7" stroke-width="2.4"/><circle cx="18" cy="7" r="2" fill="currentColor" stroke="none"/>'
+};
+function icon(n) { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("class", "i"); s.setAttribute("aria-hidden", "true"); s.innerHTML = ICONS[n]; return s; }
+document.getElementById("mark").append(icon("mark"));
+
+const money = n => "$" + Number(n || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const cents = n => (n > 0 && n < 0.01) ? "$" + Number(n).toFixed(3) : money(n);
+const rough = n => n >= 10 ? "$" + Math.round(n).toLocaleString() : money(n);
+const num = n => Number(n || 0).toLocaleString();
+const compact = n => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n);
+const hours = x => x < 0.1 ? "a few minutes" : x < 1 ? Math.round(x * 60) + " min" : (Math.round(x * 10) / 10) + " h";
+
+function toast(msg, tone) {
+  const t = h("div", {class: "toast " + (tone || "bad")}, String(msg));
+  document.getElementById("toasts").append(t);
+  setTimeout(() => t.remove(), tone === "ok" ? 3000 : 6000);
+}
+async function api(path, body, opts) {
+  opts = opts || {};
+  const init = body === undefined ? {} : {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, opts.headers || {}), body: opts.raw ? body : JSON.stringify(body)};
   const url = body === undefined ? path : path + (path.includes("?") ? "&" : "?") + "t=" + TOKEN;
-  const r = await fetch(url, init);
-  const data = await r.json().catch(() => ({error: "The app didn't answer. Is its window still open?"}));
+  let r; try { r = await fetch(url, Object.assign(init, opts.signal ? {signal: opts.signal} : {})); }
+  catch (e) { if (e.name === "AbortError") throw e; throw new Error("The app didn't answer. Is its window still open?"); }
+  const data = await r.json().catch(() => ({error: "The app sent something unexpected."}));
   if (!r.ok || data.error) throw new Error(data.error || "Something went wrong.");
   return data;
 }
-function stopPolling() { if (poll) { clearTimeout(poll); poll = null; } }
+function stopPolling() { clearTimeout(pollTimer); pollTimer = null; }
+function pill(text, cls, pulse) { return h("span", {class: "pill " + (cls || "")}, pulse ? h("i", {class: "pulse"}) : null, text); }
 
-// --- router ----------------------------------------------------------------
+// ---- never let a near-miss file drop navigate the page away ----
+["dragenter", "dragover", "drop"].forEach(ev => document.addEventListener(ev, e => {
+  if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) {
+    e.preventDefault();
+    if (ev !== "drop") e.dataTransfer.dropEffect = "copy";
+  }
+}));
+document.addEventListener("drop", e => {
+  if (e.defaultPrevented && e.__handled) return;
+  if (location.hash === "#/new" && W && W.mode === "enrich" && e.dataTransfer && e.dataTransfer.files.length && W.uploadFn) W.uploadFn(e.dataTransfer.files[0]);
+});
+
+// ---- router ----
 async function route() {
-  stopPolling();
-  const h = location.hash.replace(/^#\/?/, "");
-  document.getElementById("nav-home").classList.toggle("on", h === "");
-  document.getElementById("nav-keys").classList.toggle("on", h === "keys");
+  stopPolling(); routeSeq++;
+  const my = routeSeq, hash = location.hash.replace(/^#\/?/, "");
+  document.getElementById("nav-home").classList.toggle("on", hash === "" || hash.startsWith("job/") || hash === "new");
+  document.getElementById("nav-keys").classList.toggle("on", hash === "keys");
+  document.body.scrollTop = 0; window.scrollTo(0, 0);
   try {
-    home = await api("/api/home");
-    if (h === "") return renderHome();
-    if (h === "new") return renderWizard();
-    if (h === "keys") return renderKeysPage();
-    if (h.startsWith("job/")) return renderJob(decodeURIComponent(h.slice(4)));
+    if (!home || hash === "" || hash === "keys" || hash === "new") home = await api("/api/home");
+    if (my !== routeSeq) return;
+    document.getElementById("keydot").hidden = !!home.keys.monid;
+    $app.className = "";
+    $app.replaceChildren();
+    if (hash === "") return renderHome();
+    if (hash === "new") return renderWizard();
+    if (hash === "keys") return renderKeysPage();
+    if (hash.startsWith("job/")) return renderJob(decodeURIComponent(hash.slice(4)), my);
     location.hash = "#/";
-  } catch (e) { $app.innerHTML = `<div class="note bad" style="margin-top:24px">${esc(e.message)}</div>`; }
+  } catch (e) { $app.replaceChildren(h("div", {class: "note bad"}, h("h2", {text: "Something went wrong"}), h("p", {text: e.message}), h("div", {class: "actions"}, h("button", {class: "btn ghost", onclick: route, text: "Try again"})))); }
 }
 window.addEventListener("hashchange", route);
 
-// --- home ------------------------------------------------------------------
+// ---- home ----
 function jobState(j) {
-  if (j.running) return ["Running", "run"];
+  if (j.running) return ["Running", "run", true];
   if (j.stopped) return ["Stopped", "bad"];
   if (!j.job.approved_budget) return [j.quote ? "Needs your OK" : "Getting the price", "warn"];
   if (j.finished) return ["Done", "ok"];
   return ["Ready to start", "warn"];
 }
 function describe(job) {
-  if (job.mode === "build") return "New list · " + (job.markets || []).map(m => m.label).join(", ");
-  const f = (job.source_file || "").split(/[\\/]/).pop().replace(/^\d+-/, "");
-  return "Your list · " + f;
+  if (job.mode === "build") return "New list \u00b7 " + (job.markets || []).map(m => m.label).join(", ");
+  return "Your list \u00b7 " + (job.source_file || "").split(/[\\/]/).pop().replace(/^\d+-/, "");
 }
 function renderHome() {
-  const jobs = home.jobs;
-  $app.innerHTML = `
-    <h1>${jobs.length ? "Your lists" : "Welcome"}</h1>
-    <p class="lead">${jobs.length ? "Pick one up where you left off, or start a new one." :
-      "Build a list of real estate agents from active listings, or check a list you already have: real cell numbers, top producers, verified emails. You'll see the price before anything is spent."}</p>
-    ${home.keys.monid ? "" : `<div class="card"><h2>First: your Monid key</h2>
-      <p>One key runs everything. Sign up at Monid, add a little credit, create an API key, and paste it in. About two minutes, once.</p>
-      <div class="actions" style="margin:8px 0 0"><button class="btn" onclick="location.hash='#/keys'">Add my key</button></div></div>`}
-    <div class="actions" style="margin:0 0 18px"><button class="btn${home.keys.monid ? "" : " ghost"}" onclick="location.hash='#/new'">Start a new list</button></div>
-    <div class="jobs">${jobs.map(j => {
-      const [label, cls] = jobState(j);
-      return `<a class="card" href="#/job/${encodeURIComponent(j.job.name)}">
-        <div><h2>${esc(j.job.name)}</h2><div class="meta">${esc(describe(j.job))}</div></div>
-        <div class="right"><span class="pill ${cls}">${label}</span>
-        <div class="meta small" style="margin-top:4px">${num(j.status.agents)} agents · ${money(j.status.spent)} spent</div></div></a>`;
-    }).join("")}</div>`;
-}
-
-// --- new list wizard -------------------------------------------------------
-function freshWizard() {
-  return {mode: null, markets: [], minListings: 1, results: [], searching: false,
-          upload: null, mapping: {}, addons: {phones: true, producers: false, emails: false},
-          phonesFor: "all", deep: false, name: "", busy: false};
-}
-function renderWizard() {
-  wizard = wizard || freshWizard();
-  const w = wizard, P = home.prices;
-  const step2 = w.mode === "build" ? `
-      <div class="step-label">2 · Which areas?</div>
-      <div class="card">
-        <p class="muted small">Counties work best ("Broward County, FL"). Cities and ZIP codes work too. Include the state.</p>
-        <form class="row" onsubmit="searchMarkets(event)">
-          <input class="grow" type="text" id="q" placeholder="e.g. Hillsborough County, FL" autocomplete="off">
-          <button class="btn ghost" ${w.searching ? "disabled" : ""}>${w.searching ? '<span class="spinner"></span>Searching' : "Search"}</button>
-        </form>
-        ${w.results.length ? `<div class="results">${w.results.map((m, i) =>
-          `<button onclick="addMarket(${i})"><span>${esc(m.label)}</span><span class="muted small">${esc(m.kind)} · add</span></button>`).join("")}</div>` : ""}
-        <div class="chips">${w.markets.map((m, i) => `<span class="chip">${esc(m.label)}<button onclick="dropMarket(${i})" aria-label="Remove">×</button></span>`).join("")}</div>
-      </div>
-      <div class="step-label">Which agents?</div>
-      <div class="card radios">
-        ${[[1, "Everyone with an active listing", "The biggest list."],
-           [2, "2 or more active listings", "About 40% of agents: the active ones."],
-           [5, "5 or more active listings", "About 8%: the heavy hitters."]].map(([v, t, d]) =>
-          `<label><input type="radio" name="minl" ${w.minListings === v ? "checked" : ""} onchange="wizard.minListings=${v}">
-           <span><b>${t}</b> <span class="muted small">${d}</span></span></label>`).join("")}
-        <p class="muted small" style="margin-top:6px">Getting the listings, with each agent's name, phone and email, costs about ${money(P.listing * 1000)} per 1,000 listings.</p>
-      </div>` : w.mode === "enrich" ? `
-      <div class="step-label">2 · Your list</div>
-      <div class="card">
-        ${w.upload ? `
-          <div class="row"><div class="grow"><h3>${esc(w.upload.filename)}</h3>
-          <p class="muted small">${num(w.upload.rows)} rows. Check we've read the columns right:</p></div>
-          <button class="link" onclick="wizard.upload=null;renderWizard()">Use a different file</button></div>
-          <div class="mapping">${[["name","Agent's name"],["email","Email"],["phone","Phone"],["brokerage","Brokerage"],["city","City"]].map(([f, label]) => `
-            <label for="map-${f}">${label}</label>
-            <select id="map-${f}" onchange="wizard.mapping['${f}']=this.value">
-              <option value="">— not in my list —</option>
-              ${w.upload.header.map(h => `<option ${w.mapping[f] === h ? "selected" : ""}>${esc(h)}</option>`).join("")}
-            </select>`).join("")}</div>
-          <div class="table-wrap"><table><tr>${w.upload.header.map(h => `<th>${esc(h)}</th>`).join("")}</tr>
-            ${w.upload.preview.slice(0, 3).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>` : `
-          <label class="drop" id="drop">
-            <input type="file" accept=".csv,.xlsx,.xlsm" hidden onchange="uploadFile(this.files[0])">
-            <b>Drop your CSV or Excel file here</b><br><span class="small">or click to choose it</span>
-          </label>
-          <p class="muted small" style="margin-top:8px">Using Google Sheets or Numbers? Export it as CSV first.</p>`}
-      </div>` : "";
-  const ready = w.mode && (w.mode === "build" ? w.markets.length : w.upload);
-  $app.innerHTML = `
-    <h1>Start a new list</h1>
-    <p class="lead">Pick what you want. You'll see the exact price before anything is spent.</p>
-    <div class="step-label">1 · What are we working with?</div>
-    <div class="choices">
-      <button class="choice ${w.mode === "build" ? "on" : ""}" onclick="pickMode('build')">
-        <strong>Build a new list</strong><span>Every agent with an active listing in your area.</span></button>
-      <button class="choice ${w.mode === "enrich" ? "on" : ""}" onclick="pickMode('enrich')">
-        <strong>Use a list I already have</strong><span>A CSV or Excel file of agents.</span></button>
-    </div>
-    ${step2}
-    ${ready ? `
-    <div class="step-label">3 · What should we do?</div>
-    <div class="card">
-      <label class="check"><input type="checkbox" ${w.addons.phones ? "checked" : ""} onchange="wizard.addons.phones=this.checked;renderWizard()">
-        <div><h3>Check phone numbers</h3><p class="small">Is each number the agent's cell, or an office line or landline? If some are wrong, we'll tell you how many and what finding the real ones costs.</p>
-        <p class="price">About ${cents(P.phone)} per number</p>
-        ${w.addons.phones ? `<div class="sub">
-          <b>Which agents?</b>
-          <label><input type="radio" name="pf" ${w.phonesFor === "all" ? "checked" : ""} onchange="wizard.phonesFor='all'"> Everyone</label>
-          <label><input type="radio" name="pf" ${w.phonesFor === "emails" ? "checked" : ""} onchange="wizard.phonesFor='emails'"> Only agents with an email</label>
-          <label class="${w.addons.producers ? "" : "disabled"}"><input type="radio" name="pf" ${w.phonesFor === "producers" ? "checked" : ""} ${w.addons.producers ? "" : "disabled"} onchange="wizard.phonesFor='producers'"> Only top producers <span class="muted">${w.addons.producers ? "" : "(tick Find top producers)"}</span></label>
-        </div>` : ""}</div></label>
-      <label class="check"><input type="checkbox" ${w.addons.producers ? "checked" : ""} onchange="wizard.addons.producers=this.checked;if(!this.checked&&wizard.phonesFor==='producers')wizard.phonesFor='all';renderWizard()">
-        <div><h3>Find top producers</h3><p class="small">How many listings each agent sold in the last 12 months, from homes.com.</p>
-        <p class="price">About ${cents(P.volume)} per agent</p></div></label>
-      <label class="check"><input type="checkbox" ${w.addons.emails ? "checked" : ""} onchange="wizard.addons.emails=this.checked;renderWizard()">
-        <div><h3>Find &amp; verify emails</h3><p class="small">Finds missing emails on brokerage and personal sites, then checks they won't bounce.</p>
-        <p class="price">About ${cents(P.emails)} per agent</p>
-        ${w.addons.emails ? `<div class="sub"><label><input type="checkbox" ${w.deep ? "checked" : ""} onchange="wizard.deep=this.checked"> Also try the slow Chrome pass <span class="muted">(finds about 30% more; takes hours and this computer has to stay on)</span></label></div>` : ""}</div></label>
-    </div>
-    <div class="step-label">4 · Name it</div>
-    <div class="card row">
-      <input class="grow" type="text" id="jobname" value="${esc(w.name || suggestName())}" oninput="wizard.name=this.value">
-      <button class="btn" ${w.busy ? "disabled" : ""} onclick="createJob()">${w.busy ? '<span class="spinner"></span>Setting up' : "See the price →"}</button>
-    </div>` : ""}`;
-  const drop = document.getElementById("drop");
-  if (drop) {
-    drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
-    drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-    drop.addEventListener("drop", e => { e.preventDefault(); uploadFile(e.dataTransfer.files[0]); });
+  const jobs = home.jobs || [];
+  $app.append(h("div", {class: "hero"},
+    h("div", null, h("h1", {class: "page-title", text: jobs.length ? "Your lists" : "Build a list of agents you can actually call"}),
+      h("p", {class: "page-lead", text: jobs.length ? "Pick one up where you left off, or start a new one." : "Names, cell phones, verified emails and sales volume, from active listings in the areas you pick, or from a spreadsheet you already have. You see the price before anything is spent."})),
+    h("a", {class: "btn lg" + (home.keys.monid ? "" : " ghost"), href: "#/new"}, "Start a new list", icon("arrow"))));
+  if (!home.keys.monid) {
+    $app.insertBefore(h("div", {class: "card onboard"},
+      h("h2", {text: "First, add your Monid key"}),
+      h("p", {class: "muted", text: "One key runs everything. It takes about two minutes, once, and it stays on this computer."}),
+      h("ol", null, h("li", {text: "Make a Monid account"}), h("li", {text: "Add a little credit (pay as you go)"}), h("li", {text: "Create a key and paste it in"})),
+      h("div", {class: "actions"}, h("a", {class: "btn", href: "#/keys"}, icon("key"), "Add my key"))), $app.firstChild.nextSibling);
   }
-}
-function suggestName() {
-  const w = wizard, month = new Date().toLocaleString("en-US", {month: "short"}).toLowerCase();
-  const base = w.mode === "build" ? (w.markets[0]?.label || "list").split(",")[0].replace(/ county/i, "")
-                                  : (w.upload?.filename || "my-list").replace(/\.\w+$/, "");
-  return (base + "-" + month).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-function pickMode(m) { wizard.mode = m; renderWizard(); }
-async function searchMarkets(e) {
-  e.preventDefault();
-  const q = document.getElementById("q").value.trim();
-  if (!q) return;
-  wizard.searching = true; renderWizard();
-  try { wizard.results = (await api("/api/markets?q=" + encodeURIComponent(q))).markets;
-        if (!wizard.results.length) toast("No listings there. Try the county with its state, e.g. Broward County, FL."); }
-  catch (err) { toast(err.message); }
-  wizard.searching = false; renderWizard();
-  const box = document.getElementById("q"); if (box) box.value = q;
-}
-function addMarket(i) {
-  const m = wizard.results[i];
-  if (!wizard.markets.some(x => x.code === m.code)) wizard.markets.push(m);
-  wizard.results = []; renderWizard();
-}
-function dropMarket(i) { wizard.markets.splice(i, 1); renderWizard(); }
-async function uploadFile(file) {
-  if (!file) return;
-  try {
-    const r = await fetch("/api/upload?t=" + TOKEN, {method: "POST", body: file,
-      headers: {"X-Filename": encodeURIComponent(file.name)}});
-    const data = await r.json();
-    if (!r.ok || data.error) throw new Error(data.error);
-    wizard.upload = data; wizard.mapping = {...data.mapping};
-    renderWizard();
-  } catch (e) { toast(e.message || "Couldn't read that file."); }
-}
-async function createJob() {
-  const w = wizard;
-  const addons = [];
-  if (w.addons.phones) addons.push("verify_phones");
-  if (w.addons.producers) addons.push("volume");
-  if (w.addons.emails) addons.push("emails", "verify_emails");
-  if (w.addons.emails && w.deep) addons.push("deep_emails");
-  if (w.mode === "build" ? false : !addons.length) return toast("Tick at least one thing to do with your list.");
-  w.busy = true; renderWizard();
-  try {
-    const res = await api("/api/jobs", {
-      name: document.getElementById("jobname").value || suggestName(), mode: w.mode,
-      markets: w.markets.map(m => m.code), file: w.upload?.path, mapping: w.mapping,
-      addons, min_listings: w.minListings, phones_for: w.addons.phones ? w.phonesFor : "all",
-});
-    wizard = null;
-    location.hash = "#/job/" + encodeURIComponent(res.name);
-  } catch (e) { w.busy = false; renderWizard(); toast(e.message); }
+  if (!jobs.length) { $app.append(h("div", {class: "empty"}, h("b", {text: "No lists yet."}), h("p", {text: "Your first one is a couple of clicks away."}))); return; }
+  $app.append(h("div", {class: "jobs"}, jobs.map(j => {
+    const [label, cls, pulse] = jobState(j);
+    return h("a", {class: "job", href: "#/job/" + encodeURIComponent(j.job.name)},
+      h("div", {class: "t"}, h("div", {style: {minWidth: 0}}, h("h2", {text: j.job.name}), h("div", {class: "d", text: describe(j.job)})), pill(label, cls, pulse)),
+      h("div", {class: "s"}, h("div", null, h("b", {text: num(j.status.agents)}), h("span", {text: "agents"})), h("div", null, h("b", {text: money(j.status.spent)}), h("span", {text: "spent"}))));
+  })));
 }
 
-// --- a job -----------------------------------------------------------------
-const STEP_NAMES = {count: "Count listings", listings: "Get listings (agents' names, phones, emails)",
-  agents: "Merge into agents", emails: "Find emails",
-  deep_emails: "Chrome email pass", verify_emails: "Verify emails", volume: "homes.com sales",
-  verify_phones: "Check phone numbers", fix_phones: "Find real cell numbers"};
-let current = null;
-async function renderJob(name, quiet) {
-  let v;
-  try { v = await api("/api/jobs/" + encodeURIComponent(name)); }
-  catch (e) { $app.innerHTML = `<div class="note bad" style="margin-top:24px">${esc(e.message)}</div>`; return; }
-  current = v;
-  const j = v.job, q = v.quote, qj = v.quote_job, s = v.status;
-  const pricing = qj && qj.state === "working";
-  const parts = [];
+// ---- wizard ----
+const KIND = {county: "County", city: "City", zip: "ZIP"};
+function kindOf(p) { const k = String(p.kind || "").toLowerCase(); return k.includes("count") ? "county" : k.includes("zip") ? "zip" : k.includes("city") || k.includes("town") ? "city" : k; }
+function freshW() { return {mode: null, places: [], minListings: 1, upload: null, mapping: {}, addons: {phones: true, producers: false, emails: false}, phonesFor: "all", deep: false, name: "", nameEdited: false, busy: false, est: null, estKey: "", estState: "idle"}; }
+function addonList(w) {
+  const a = [];
+  if (w.addons.phones) a.push("verify_phones");
+  if (w.addons.producers) a.push("volume");
+  if (w.addons.emails) a.push("emails", "verify_emails");
+  if (w.addons.emails && w.deep) a.push("deep_emails");
+  return a;
+}
+const popOf = p => p.uncataloged ? 25000 : Number(p.population || 0);
+function suggestName(w) {
+  const mon = new Date().toLocaleString("en-US", {month: "short"}).toLowerCase();
+  let base = w.mode === "build" ? (w.places.length ? (w.places[0].kind === "zip" || /^\d/.test(w.places[0].label) ? "zip-" + w.places[0].label.replace(/\D/g, "") : w.places[0].label.split(",")[0].replace(/ county/i, "")) : "list") : (w.upload ? w.upload.filename.replace(/\.\w+$/, "") : "my-list");
+  if (w.mode === "build" && w.places.length > 1) base += "-plus";
+  return (base + "-" + mon).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
 
-  if (v.running) parts.push(runningCard(v));
-  else if (pricing) parts.push(`<div class="card"><span class="spinner"></span><b>Working out the price…</b>
-    <p class="muted small">${j.mode === "build" ? "Counting the active listings in your areas first, so the price is based on real numbers. This can take a few minutes and costs a few cents." : "This only takes a moment."}</p></div>`);
-  else {
-    if (qj && qj.state === "error") parts.push(`<div class="note bad"><b>Couldn't work out the price.</b><p>${esc(qj.error)}</p>
-      <div class="actions"><button class="btn ghost" onclick="act('quote')">Try again</button></div></div>`);
-    if (v.log.stopped && v.finished) parts.push(stoppedCard(v));
-    if (!j.approved_budget) {
-      if (v.missing && Object.keys(v.missing).length) parts.push(await keysCard(v.needs, true));
-      if (q) parts.push(priceCard(v));
-      else if (!qj) parts.push(`<div class="card"><p>Let's work out what this costs.</p><div class="actions"><button class="btn" onclick="act('quote')">See the price</button></div></div>`);
-    } else if (!v.finished) {
-      parts.push(`<div class="card"><h2>Approved up to ${money(j.approved_budget)}</h2><p class="muted">Ready when you are.</p>
-        <div class="actions"><button class="btn" onclick="act('run')">Start</button></div></div>`);
-    } else if (v.trial && !v.log.stopped) {
-      parts.push(`<div class="note ok"><h2>Trial finished</h2><p>Here's a sample. If it looks right, run the rest. Nothing already done is paid for twice.</p>
-        <div class="actions"><button class="btn" onclick="act('run')">Run the rest</button></div></div>`);
-    } else if (!v.log.stopped && v.left) {
-      parts.push(`<div class="note warn"><h2>Mostly done</h2><p>${num(v.left)} couldn't be done this time: a website or service didn't answer.
-        Trying again picks up only those, so nothing is paid for twice.</p>
-        <div class="actions"><button class="btn" onclick="act('run')">Try again</button></div></div>`);
-    } else if (!v.log.stopped) {
-      parts.push(`<div class="note ok"><h2>Done</h2><p>Your files are below.</p></div>`);
+function renderWizard() {
+  W = W || freshW();
+  const w = W, P = home.prices || {}, ups = [];
+  $app.className = "pad-bar";
+  const sync = () => { ups.forEach(f => f()); scheduleEstimate(); };
+
+  // 1 mode
+  const modeBtn = (m, ic, t, d) => { const b = h("button", {class: "mode", type: "button", "aria-pressed": "false", onclick: () => { w.mode = m; sync(); }}, h("span", {class: "ic"}, icon(ic)), h("b", {text: t}), h("span", {text: d})); ups.push(() => b.setAttribute("aria-pressed", w.mode === m)); return b; };
+  const s1 = h("section", {class: "step"}, h("h2", {text: "Where should the agents come from?"}),
+    h("div", {class: "body modes"}, modeBtn("build", "pin", "Build a new list", "Every agent with an active listing in the areas you pick."), modeBtn("enrich", "file", "Use a list I already have", "Upload a CSV or Excel file and we fill in the gaps.")));
+
+  // 2a areas
+  const pf = placesField(w, sync);
+  const sum = h("p", {class: "areas-sum"});
+  const s2 = h("section", {class: "step", hidden: true}, h("h2", {text: "Which areas?"}),
+    h("p", {class: "sub", text: "Start typing a county, city or ZIP code and pick from the list. Add as many as you like."}),
+    h("div", {class: "body"}, pf.el, h("div", {class: "hintline"}, "Try", ["33327", "Broward", "Tampa"].map(t => h("button", {class: "try", type: "button", onclick: () => pf.seed(t), text: t}))), sum));
+  ups.push(() => { s2.hidden = w.mode !== "build"; const n = w.places.length, pop = w.places.reduce((a, p) => a + popOf(p), 0);
+    sum.replaceChildren(...(n ? [h("b", {text: n + (n === 1 ? " area" : " areas")}), pop ? " \u00b7 about " + compact(pop) + " people" : ""] : [])); pf.paint(); });
+
+  // 2b file
+  const up = uploadBlock(w, sync);
+  const s2b = h("section", {class: "step", hidden: true}, h("h2", {text: "Your list"}), h("p", {class: "sub", text: "CSV or Excel. We'll figure out which column is which."}), h("div", {class: "body"}, up.el));
+  ups.push(() => { s2b.hidden = w.mode !== "enrich"; up.paint(); });
+
+  // 3 which agents
+  const radios = [[1, "Everyone with an active listing", "The biggest list.", "100%"], [2, "2 or more active listings", "The active ones.", "about 40%"], [5, "5 or more active listings", "The heavy hitters.", "about 8%"]].map(([v, t, d, s]) => {
+    const inp = h("input", {type: "radio", name: "minl", value: v, onchange: () => { w.minListings = v; sync(); }});
+    ups.push(() => { inp.checked = w.minListings === v; });
+    return h("label", {class: "opt"}, inp, h("div", null, h("b", {text: t}), h("small", {text: d})), h("span", {class: "share", text: s}));
+  });
+  const s3 = h("section", {class: "step", hidden: true}, h("h2", {text: "Which agents do you want?"}), h("div", {class: "body opts"}, radios));
+  ups.push(() => { s3.hidden = !(w.mode === "build" && w.places.length); });
+
+  // 4 add-ons
+  const ready = () => w.mode === "build" ? w.places.length > 0 : !!w.upload;
+  const mkAddon = (key, ic, title, desc, price, subFn, note) => {
+    const sw = h("input", {type: "checkbox", role: "switch", "aria-label": title, onchange: () => { w.addons[key] = sw.checked; if (key === "producers" && !sw.checked && w.phonesFor === "producers") w.phonesFor = "all"; sync(); }});
+    const sub = subFn ? h("div", {class: "addon-sub", hidden: true}, subFn()) : null;
+    const box = h("div", {class: "addon"}, h("label", {class: "addon-h"}, h("span", {class: "ic"}, icon(ic)), h("div", {class: "tx"}, h("b", {text: title}), h("p", {class: "d", text: desc}), note ? h("p", {class: "d", style: {color: "var(--ink)"}, text: note}) : null, h("span", {class: "pr", text: price})), h("span", {class: "sw"}, sw, h("i"))), sub);
+    ups.push(() => { sw.checked = !!w.addons[key]; box.classList.toggle("on", !!w.addons[key]); if (sub) sub.hidden = !w.addons[key]; });
+    return box;
+  };
+  const pfOpt = (v, t, needsProd) => { const inp = h("input", {type: "radio", name: "pf", onchange: () => { w.phonesFor = v; sync(); }}); const l = h("label", {class: "opt"}, inp, h("div", null, h("b", {text: t}), needsProd ? h("small", {text: "Needs \u201cFind top producers\u201d turned on"}) : null)); ups.push(() => { inp.checked = w.phonesFor === v; if (needsProd) inp.disabled = !w.addons.producers; }); return l; };
+  const deep = h("input", {type: "checkbox", onchange: () => { w.deep = deep.checked; sync(); }}); ups.push(() => { deep.checked = w.deep; });
+  const s4 = h("section", {class: "step", hidden: true}, h("h2", {text: "What should we do for each agent?"}),
+    h("p", {class: "sub", text: "Turn on what you need. Each one shows its price per unit."}),
+    h("div", {class: "body"},
+      mkAddon("phones", "phone", "Check phone numbers", "Is each number a real cell, or an office line or landline? If some are wrong we'll tell you how many, and what finding the real ones would cost.", "about " + cents(P.phone) + " per number",
+        () => [h("h4", {text: "Which agents get checked?"}), pfOpt("all", "Everyone"), pfOpt("emails", "Only agents with an email"), pfOpt("producers", "Only top producers", true), h("p", {text: "Checking fewer agents is the biggest way to save."})]),
+      mkAddon("producers", "trophy", "Find top producers", "How many listings each agent sold in the last 12 months, from homes.com.", "about " + cents(P.volume) + " per agent"),
+      mkAddon("emails", "mail", "Find & verify emails", "Looks for missing emails on brokerage and personal sites, then checks that they won't bounce.", "about " + cents(P.emails) + " per agent",
+        () => [h("label", {class: "opt"}, deep, h("div", null, h("b", {text: "Also try the slow Chrome pass"}), h("small", {text: "Finds about 30% more. Takes hours, and this computer has to stay on."})))],
+        null)));
+  const emailNote = h("p", {class: "small muted", style: {marginTop: "12px"}});
+  s4.querySelector(".body").append(emailNote);
+  ups.push(() => { s4.hidden = !ready(); emailNote.textContent = w.mode === "build" ? "Listings usually come with an email already, so this only searches for the ones that are missing. With nothing turned on you still get names, phones, brokerages and listing stats." : "Email search only looks at rows that have no email yet."; });
+
+  // 5 name
+  const name = h("input", {class: "input nameinp", type: "text", id: "jobname", autocomplete: "off", spellcheck: "false", "aria-label": "List name", oninput: () => { w.name = name.value; w.nameEdited = true; sync(); }});
+  const s5 = h("section", {class: "step", hidden: true}, h("h2", {text: "Name this list"}), h("div", {class: "body"}, name));
+  ups.push(() => { s5.hidden = !ready(); if (!w.nameEdited && document.activeElement !== name) { w.name = suggestName(w); name.value = w.name; } else if (!name.value && !w.nameEdited) name.value = w.name; });
+
+  // dock
+  const val = h("div", {class: "val"}), subl = h("div", {class: "sub"}), hint = h("div", {class: "hint"});
+  const detailBtn = h("button", {class: "detail-toggle", type: "button", "aria-expanded": "false", onclick: () => { detail.hidden = !detail.hidden; detailBtn.setAttribute("aria-expanded", !detail.hidden); detailBtn.textContent = detail.hidden ? "What makes up this number?" : "Hide the breakdown"; }, text: "What makes up this number?"});
+  const detail = h("div", {class: "dock-detail", hidden: true});
+  const go = h("button", {class: "btn lg", type: "button", onclick: () => createJob(w, go)}, "See exact price", icon("arrow"));
+  const estBox = h("div", {class: "est", "aria-live": "polite"}, h("div", {class: "lab", text: "Rough estimate"}), val, subl, hint);
+  const dock = h("div", {class: "dock"}, h("div", {class: "dock-in"}, detail, h("div", {class: "dock-main"}, estBox, go)));
+  const missing = () => !w.mode ? "Pick where the agents come from" : w.mode === "build" && !w.places.length ? "Add at least one area" : w.mode === "enrich" && !w.upload ? "Choose your file to continue" :
+    w.mode === "enrich" && !(w.mapping.name || w.mapping.first_name) ? "Pick which column is the agent's name" : w.mode === "enrich" && !addonList(w).length ? "Turn on at least one thing to do" : !(w.name || "").trim() ? "Give your list a name" : "";
+  w.paintDock = () => {
+    const m = missing(), est = w.est;
+    go.disabled = !!m || w.busy;
+    go.replaceChildren(...(w.busy ? [h("span", {class: "spin"}), "Setting up"] : ["See exact price", icon("arrow")]));
+    hint.hidden = !m; hint.textContent = m;
+    const showEst = !m || (ready() && w.mode);
+    val.hidden = subl.hidden = !(ready() && w.mode) || (!!m && !est && w.estState !== "loading");
+    detailBtn.hidden = true;
+    if (ready()) {
+      if (w.estState === "loading" && !est) { val.replaceChildren(h("span", {class: "shim"})); subl.textContent = "Working it out\u2026"; }
+      else if (w.estState === "error" && !est) { val.replaceChildren(h("small", {text: "Couldn't estimate right now"})); subl.textContent = "You'll still see the exact price next."; }
+      else if (est) {
+        const lo = est.low, hi = est.high;
+        val.replaceChildren(h("small", {text: "about"}), rough(lo) + " \u2013 " + rough(hi));
+        subl.replaceChildren(h("span", {class: "long", text: "A rough range. You'll see the exact price before anything is spent. "}), h("span", {class: "short", text: "Rough range. Exact price next. "}), detailBtn); detailBtn.hidden = false; detailBtn.textContent = detail.hidden ? "What makes up this number?" : "Hide the breakdown";
+        detail.replaceChildren(h("p", {class: "small muted", text: (est.listings ? "About " + num(est.listings) + " listings from " : "About ") + num(est.agents) + " agents."}),
+          h("table", null, (est.lines || []).map(l => h("tr", null, h("td", {text: l.label || l.step}), h("td", {text: rough(l.low) + " \u2013 " + rough(l.high)})))),
+          est.note ? h("p", {class: "small muted", style: {marginTop: "10px"}, text: est.note}) : null);
+      } else { val.hidden = true; subl.hidden = true; }
+    } else { val.hidden = subl.hidden = true; detail.hidden = true; }
+    if (val.hidden) { detail.hidden = true; estBox.querySelector(".lab").textContent = "Rough estimate"; }
+    estBox.querySelector(".lab").hidden = !!m && !ready();
+    estBox.querySelector(".lab").hidden = !ready();
+  };
+  ups.push(() => w.paintDock());
+
+  $app.append(h("a", {class: "back", href: "#/"}, icon("back"), "Your lists"),
+    h("h1", {class: "page-title", text: "Start a new list"}),
+    h("p", {class: "page-lead", text: "A few choices, then you see the exact price. Nothing is spent until you say go."}),
+    h("div", {class: "wiz"}, s1, s2, s2b, s3, s4, s5), dock);
+  w.estKey = "";
+  sync();
+}
+
+let estTimer = null, estSeq = 0;
+function scheduleEstimate() {
+  const w = W; if (!w) return;
+  const ok = w.mode && (w.mode === "build" ? w.places.length : w.upload);
+  if (!ok) { w.est = null; w.estKey = ""; w.estState = "idle"; w.paintDock && w.paintDock(); return; }
+  const pop = w.places.reduce((a, p) => a + popOf(p), 0);
+  const qs = new URLSearchParams({mode: w.mode, population: pop, rows: w.upload ? w.upload.rows : 0, min_listings: w.minListings, addons: addonList(w).join(","), phones_for: w.addons.phones ? w.phonesFor : "all"}).toString();
+  if (qs === w.estKey) { w.paintDock && w.paintDock(); return; }
+  w.estKey = qs; w.estState = "loading"; w.paintDock && w.paintDock();
+  clearTimeout(estTimer); const my = ++estSeq;
+  estTimer = setTimeout(async () => {
+    try { const e = await api("/api/estimate?" + qs); if (my === estSeq && W === w) { w.est = e; w.estState = "ok"; } }
+    catch (err) { if (my === estSeq && W === w) { w.est = null; w.estState = "error"; } }
+    if (W === w && w.paintDock && location.hash === "#/new") w.paintDock();
+  }, 220);
+}
+
+function placesField(w, sync) {
+  const input = h("input", {type: "text", id: "areas", role: "combobox", "aria-autocomplete": "list", "aria-expanded": "false", "aria-controls": "pl-list", "aria-label": "Search counties, cities and ZIP codes", placeholder: "Type a county, city or ZIP code\u2026", autocomplete: "off", spellcheck: "false", enterkeyhint: "search"});
+  const list = h("ul", {class: "pop", id: "pl-list", role: "listbox", hidden: true});
+  const spin = h("span", {class: "spin busy", hidden: true});
+  const live = h("div", {class: "sr", "aria-live": "polite"});
+  const box = h("div", {class: "tagbox", onclick: e => { if (e.target === box) input.focus(); }}, input, spin, list, live);
+  let items = [], active = -1, timer = null, ctl = null, seq = 0, loading = false, pendingEnter = false, lastQ = "", open = false;
+
+  function paint() {
+    box.querySelectorAll(".tag").forEach(t => t.remove());
+    w.places.forEach((p, i) => box.insertBefore(h("span", {class: "tag"}, h("span", {class: "k", text: KIND[kindOf(p)] || p.kind}), h("span", {class: "l", text: p.label}),
+      p.uncataloged ? null : (p.population ? h("span", {class: "p", text: compact(p.population) + " people"}) : null),
+      h("button", {type: "button", "aria-label": "Remove " + p.label, onclick: e => { e.stopPropagation(); remove(i); }}, icon("x"))), input));
+  }
+  function remove(i) { const p = w.places.splice(i, 1)[0]; live.textContent = "Removed " + p.label; sync(); input.focus(); }
+  function setOpen(v) { open = v; list.hidden = !v; input.setAttribute("aria-expanded", v); if (!v) input.removeAttribute("aria-activedescendant"); }
+  function setActive(i) {
+    active = i;
+    [...list.children].forEach((li, k) => li.setAttribute("aria-selected", k === i));
+    if (i >= 0 && list.children[i]) { input.setAttribute("aria-activedescendant", list.children[i].id); list.children[i].scrollIntoView({block: "nearest"}); }
+  }
+  function render() {
+    list.replaceChildren();
+    if (!items.length) {
+      list.append(h("li", {class: "msg", role: "presentation"}, loading ? "Searching\u2026" : "No match in the catalog. Try the county name, or a 5-digit ZIP code."));
+    } else items.forEach((p, i) => {
+      const chosen = w.places.some(x => x.code === p.code), k = kindOf(p);
+      list.append(h("li", {id: "pl-" + i, role: "option", class: chosen ? "chosen" : "", "aria-selected": "false",
+        onmousedown: e => e.preventDefault(), onclick: () => pick(i), onmousemove: () => { if (active !== i) setActive(i); }},
+        h("span", {class: "badge " + k, text: KIND[k] || p.kind}), h("span", {class: "tx"}, h("b", {text: p.label}), p.detail ? h("small", {text: p.detail}) : null),
+        chosen ? h("span", {class: "pp", text: "Added"}) : (p.population ? h("span", {class: "pp", text: compact(p.population) + " people"}) : null)));
+    });
+    setOpen(true); setActive(items.length ? 0 : -1);
+    const r = box.getBoundingClientRect(); if (r.bottom + 300 > innerHeight - 110) window.scrollBy({top: Math.min(r.top - 90, r.bottom + 300 - innerHeight + 110), behavior: "smooth"});
+  }
+  function pick(i) {
+    const p = items[i]; if (!p) return;
+    if (!w.places.some(x => x.code === p.code)) { w.places.push(p); live.textContent = "Added " + p.label; }
+    input.value = ""; lastQ = ""; items = []; clearTimeout(timer); seq++; if (ctl) ctl.abort(); loading = false; spin.hidden = true; setOpen(false); sync(); input.focus();
+  }
+  async function search(q) {
+    const my = ++seq; if (ctl) ctl.abort(); ctl = new AbortController(); loading = true; spin.hidden = false; if (!items.length) render();
+    let res = [];
+    try {
+      const d = await api("/api/places?q=" + encodeURIComponent(q) + "&limit=8", undefined, {signal: ctl.signal});
+      res = Array.isArray(d) ? d : (d.places || d.results || []);
+    } catch (e) { if (e.name === "AbortError") return; if (my === seq) toast(e.message); }
+    if (my !== seq) return;
+    loading = false; spin.hidden = true;
+    items = res.slice(0, 8);
+    if (/^\d{5}$/.test(q) && !items.some(p => String(p.code).endsWith(q) || p.label === q)) items.push({code: "zip:" + q, kind: "zip", label: q, detail: "ZIP code (not in our catalog, will still be searched)", population: 0, uncataloged: true});
+    render();
+    if (pendingEnter) { pendingEnter = false; if (items.length) pick(0); }
+  }
+  input.addEventListener("input", () => {
+    const q = input.value.trim(); clearTimeout(timer); pendingEnter = false;
+    if (q.length < 2) { seq++; if (ctl) ctl.abort(); loading = false; spin.hidden = true; items = []; setOpen(false); return; }
+    if (q === lastQ) { setOpen(true); return; } lastQ = q;
+    timer = setTimeout(() => search(q), 150);
+  });
+  input.addEventListener("focus", () => { if (items.length && input.value.trim()) setOpen(true); });
+  input.addEventListener("blur", () => setOpen(false));
+  input.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!items.length) return; e.preventDefault();
+      if (!open) { setOpen(true); setActive(Math.max(active, 0)); return; }
+      setActive((active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (open && active >= 0 && items[active] && !loading) pick(active);
+      else if (input.value.trim().length >= 2) { if (timer || loading || !items.length) pendingEnter = true; if (!timer && !loading && !items.length) search(input.value.trim()); else if (items.length && !loading) pick(Math.max(active, 0)); }
+    } else if (e.key === "Escape") { if (open) { e.preventDefault(); setOpen(false); } }
+    else if (e.key === "Backspace" && !input.value && w.places.length) remove(w.places.length - 1);
+  });
+  return {el: box, paint, seed(t) { input.value = t; input.focus(); input.dispatchEvent(new Event("input")); }};
+}
+
+function uploadBlock(w, sync) {
+  const wrap = h("div"), fileIn = h("input", {type: "file", accept: ".csv,.xlsx,.xlsm", hidden: true, "aria-label": "Choose a CSV or Excel file"});
+  let uploading = false, depth = 0;
+  const zone = h("div", {class: "drop", role: "button", tabindex: "0", "aria-label": "Choose a CSV or Excel file, or drop one here"});
+  const dropBody = () => uploading ? [h("span", {class: "spin"}), h("b", {text: "Reading your file\u2026"})] : [h("span", {class: "up"}, icon("up")), h("b", {text: "Drop your CSV or Excel file here"}), h("span", {class: "muted", text: "or click to choose it"}), h("span", {class: "small faint", text: "Using Google Sheets or Numbers? Export as CSV first."})];
+  const loaded = h("div", {hidden: true});
+  zone.addEventListener("click", () => { if (!uploading) fileIn.click(); });
+  zone.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!uploading) fileIn.click(); } });
+  zone.addEventListener("dragenter", e => { e.preventDefault(); depth++; zone.classList.add("over"); });
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => { if (--depth <= 0) { depth = 0; zone.classList.remove("over"); } });
+  zone.addEventListener("drop", e => { e.preventDefault(); e.__handled = true; depth = 0; zone.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) upload(f); });
+  fileIn.addEventListener("change", () => { if (fileIn.files[0]) upload(fileIn.files[0]); fileIn.value = ""; });
+  async function upload(file) {
+    if (uploading) return;
+    if (!/\.(csv|xlsx|xlsm)$/i.test(file.name)) return toast("That doesn't look like a CSV or Excel file. Export it as CSV and try again.");
+    uploading = true; paint();
+    try {
+      const d = await api("/api/upload", file, {raw: true, headers: {"X-Filename": encodeURIComponent(file.name), "Content-Type": "application/octet-stream"}});
+      w.upload = d; w.mapping = Object.assign({}, d.mapping || {}); w.nameEdited = false; uploading = false; loadedKey = ""; sync();
+    } catch (e) { uploading = false; toast(e.message || "Couldn't read that file."); paint(); }
+  }
+  w.uploadFn = upload;
+  const FIELDS = [["name", "Agent's name"], ["first_name", "First name"], ["email", "Email"], ["phone", "Phone"], ["brokerage", "Brokerage"], ["city", "City"]];
+  let loadedKey = "";
+  function paint() {
+    zone.replaceChildren(...dropBody()); zone.hidden = !!w.upload; loaded.hidden = !w.upload;
+    if (w.upload && loadedKey !== w.upload.path) {
+      loadedKey = w.upload.path; const u = w.upload;
+      const sels = FIELDS.filter(([f]) => f !== "first_name" || u.mapping.first_name || w.mapping.first_name).map(([f, label]) => {
+        const sel = h("select", {class: "input", id: "map-" + f, onchange: () => { if (sel.value) w.mapping[f] = sel.value; else delete w.mapping[f]; lab.classList.toggle("miss", f === "name" && !w.mapping.name && !w.mapping.first_name); sync(); }},
+          h("option", {value: "", text: "\u2014 not in my list \u2014"}), u.header.map(c => h("option", {value: c, text: c, selected: w.mapping[f] === c})));
+        const lab = h("label", {class: (f === "name" && !w.mapping.name && !w.mapping.first_name) ? "miss" : ""}, label, sel); return lab;
+      });
+      const cols = u.header.slice(0, 8);
+      loaded.replaceChildren(
+        h("div", {class: "filechip"}, h("span", {class: "ic"}, icon("check")), h("div", {style: {flex: 1, minWidth: 0}}, h("b", {text: u.filename}), h("div", {class: "small muted", text: num(u.rows) + (u.rows === 1 ? " row" : " rows")})),
+          h("button", {class: "btn ghost sm", type: "button", onclick: () => { w.upload = null; w.mapping = {}; w.nameEdited = false; loadedKey = ""; sync(); setTimeout(() => zone.focus(), 0); }, text: "Use a different file"})),
+        h("div", {class: "sub-h", text: "Which column is which?"}), h("div", {class: "map"}, sels),
+        h("div", {class: "sub-h", text: "A peek at your file"}),
+        h("div", {class: "table-wrap"}, h("table", null, h("tr", null, cols.map(c => h("th", {text: c}))), (u.preview || []).slice(0, 5).map(r => h("tr", null, r.slice(0, 8).map(c => h("td", {text: c})))))),
+        u.header.length > 8 ? h("p", {class: "small faint", style: {marginTop: "8px"}, text: "Showing the first 8 of " + u.header.length + " columns."}) : null);
     }
   }
-  if (!v.running && !pricing && v.fix_text && j.approved_budget) parts.push(`
-    <div class="card"><h2>Some numbers aren't the agent's own cell</h2><p>${esc(v.fix_text).replace(/\n/g, "<br>")}</p>
-    <div class="actions"><button class="btn" onclick="act('add', {addons: ['fix_phones']})">Find the real numbers (~${money(s.fix.cost)})</button>
-    <span class="muted small">You'll see the exact price and approve it first.</span></div></div>`);
-  parts.push(resultsCard(v));
+  wrap.append(zone, loaded, fileIn);
+  return {el: wrap, paint};
+}
 
-  $app.innerHTML = `
-    <h1>${esc(j.name)}</h1>
-    <p class="lead">${esc(describe(j))}</p>
-    ${parts.join("")}`;
-  if (v.files.length && !v.running) loadPreview(j.name);
-  const busy = v.running || pricing;
-  if (busy && location.hash === "#/job/" + encodeURIComponent(name)) poll = setTimeout(() => renderJob(name, true), 2500);
+async function createJob(w, btn) {
+  const addons = addonList(w), mapping = {};
+  for (const k in w.mapping) if (w.mapping[k]) mapping[k] = w.mapping[k];
+  w.busy = true; w.paintDock();
+  try {
+    const res = await api("/api/jobs", {name: (w.name || "").trim(), mode: w.mode, markets: w.mode === "build" ? w.places.map(p => p.code) : [], file: w.upload ? w.upload.path : null, mapping, addons, min_listings: w.minListings, phones_for: w.addons.phones ? w.phonesFor : "all"});
+    W = null; location.hash = "#/job/" + encodeURIComponent(res.name);
+  } catch (e) { w.busy = false; w.paintDock(); toast(e.message); }
 }
-function runningCard(v) {
-  const L = v.log, s = v.status, j = v.job;
-  const pct = L.progress ? Math.min(100, 100 * L.progress.done / Math.max(1, L.progress.total)) : null;
-  const spendPct = j.approved_budget ? Math.min(100, 100 * s.spent / j.approved_budget) : 0;
-  return `<div class="card">
-    <div class="row"><div class="grow"><span class="pill run">Running${v.trial ? " · trial of 25" : ""}</span>
-      <h2 style="margin-top:8px">${esc(L.step_words || "Starting")}</h2></div>
-      <button class="btn danger" onclick="if(confirm('Stop the run? Everything done so far is kept.'))act('stop')">Stop</button></div>
-    ${pct === null ? `<p class="muted small"><span class="spinner"></span>Getting going…</p>` : `
-      <div class="bar"><i style="width:${pct}%"></i></div>
-      <p class="muted small">${num(L.progress.done)} of ${num(L.progress.total)} · about ${L.progress.minutes_left} min left on this step</p>`}
-    <div class="bar spend"><i style="width:${spendPct}%"></i></div>
-    <p class="muted small">Spent ${money(s.spent)} of ${money(j.approved_budget)} approved. It stops itself at ${money(v.budget_stop)}.</p>
-    <p class="muted small">You can close this tab; the run keeps going as long as the Lead List Builder window stays open. Your Mac won't sleep while it runs.</p>
-    <details><summary>Details</summary><pre class="log">${esc(L.tail)}</pre></details></div>`;
+
+// ---- terminal ----
+function makeTerminal() {
+  const body = h("div", {class: "term-b", tabindex: "0", role: "log", "aria-label": "Live activity"});
+  const cur = h("div", {class: "tcur"}, "$", h("u")), title = h("span", {text: "lead-builder"}), live = h("em", {text: "LIVE"});
+  const jump = h("button", {class: "jump", type: "button", hidden: true, text: "Jump to latest", onclick: () => { stick = true; body.scrollTop = body.scrollHeight; jump.hidden = true; }});
+  const el = h("div", {class: "term idle", hidden: true}, h("div", {class: "term-h"}, h("i"), h("i"), h("i"), title, live), h("div", {class: "term-w"}, body, jump));
+  body.append(cur);
+  let stick = true, lastKey = null, queue = [], pumping = false, typing = null, running = false, rows = 0;
+  body.addEventListener("scroll", () => { stick = body.scrollHeight - body.scrollTop - body.clientHeight < 28; jump.hidden = stick; });
+  const keyOf = l => l.time + "|" + l.step + "|" + l.text;
+  const glyph = {ok: "+", info: ">", warn: "!", bad: "x"};
+  function mkRow(l, fresh) {
+    const tone = ["ok", "info", "warn", "bad"].includes(l.tone) ? l.tone : "info";
+    const tx = h("span", {class: "tx"}); const row = h("div", {class: "tl " + tone + (fresh ? " new" : "")}, h("span", {class: "ts", text: l.time || ""}), h("span", {class: "st", text: l.step || ""}), h("span", {class: "g", text: glyph[tone]}), tx);
+    body.insertBefore(row, cur); rows++;
+    while (rows > 200) { body.firstChild.remove(); rows--; }
+    return {row, tx};
+  }
+  const toEnd = () => { if (stick) body.scrollTop = body.scrollHeight; };
+  function pump() {
+    if (typing) return;
+    const l = queue.shift(); if (!l) { pumping = false; return; }
+    pumping = true;
+    const {tx} = mkRow(l, true), text = String(l.text || "");
+    if (queue.length > 6 || text.length < 3 || !running) { tx.textContent = text; toEnd(); return void setTimeout(pump, queue.length > 6 ? 6 : 50); }
+    const frames = queue.length > 2 ? 6 : Math.min(34, Math.max(8, Math.ceil(text.length / 3))), per = Math.ceil(text.length / frames); let i = 0;
+    typing = {tx, text};
+    const iv = setInterval(() => {
+      i += per; tx.textContent = text.slice(0, i); toEnd();
+      if (i >= text.length) { clearInterval(iv); typing = null; setTimeout(pump, queue.length > 2 ? 20 : 90 + Math.random() * 160); }
+    }, 24);
+    typing.iv = iv;
+  }
+  function flush() {
+    if (typing) { clearInterval(typing.iv); typing.tx.textContent = typing.text; typing = null; }
+    while (queue.length) { const l = queue.shift(); mkRow(l, false).tx.textContent = String(l.text || ""); }
+    pumping = false; toEnd();
+  }
+  return {
+    el,
+    update(feed, isRunning, stepWords) {
+      feed = feed || [];
+      running = isRunning; el.classList.toggle("idle", !isRunning); live.classList.toggle("off", !isRunning); live.textContent = isRunning ? "LIVE" : "DONE";
+      title.textContent = "lead-builder \u2014 " + (isRunning ? (stepWords || "working") : "finished");
+      if (!feed.length && !isRunning) { el.hidden = true; return; }
+      el.hidden = false;
+      let fresh;
+      if (lastKey === null) {
+        fresh = feed;
+        if (isRunning && feed.length > 8) { feed.slice(0, feed.length - 8).forEach(l => mkRow(l, false).tx.textContent = String(l.text || "")); fresh = feed.slice(-8); }
+        else if (!isRunning) { fresh.forEach(l => mkRow(l, false).tx.textContent = String(l.text || "")); fresh = []; }
+      } else { const idx = feed.map(keyOf).lastIndexOf(lastKey); fresh = idx >= 0 ? feed.slice(idx + 1) : feed; }
+      if (feed.length) lastKey = keyOf(feed[feed.length - 1]); else if (lastKey === null) lastKey = "";
+      queue.push(...fresh);
+      if (!isRunning) flush(); else if (!pumping) pump();
+      toEnd();
+    }
+  };
 }
-function stoppedCard(v) {
+
+// ---- job page ----
+const STEP_NAMES = {count: "Count listings", listings: "Get listings (names, phones, emails)", agents: "Merge into agents", emails: "Find emails", deep_emails: "Chrome email pass", verify_emails: "Verify emails", volume: "homes.com sales", verify_phones: "Check phone numbers", fix_phones: "Find real cell numbers"};
+const FILE_LABEL = {"everyone": "Everyone", "email-ready": "Ready to email (verified)", "email-probably-ok": "Probably fine to email (can't be confirmed)", "email-ready-UNVERIFIED": "Emails, not verified yet", "cell-phones": "Cell phones", "producers": "Top producers"};
+const FILE_NOTE = {"everyone": "Your master copy, with everything found", "email-ready": "Upload to your email tool", "email-ready-UNVERIFIED": "Verify these before sending", "cell-phones": "For calling and texting", "producers": "Your best prospects"};
+
+async function renderJob(name, my) {
+  const T = makeTerminal();
+  const head = h("div", {class: "jhead"}), actionBox = h("div"), results = h("div");
+  const termWrap = h("div", {style: {marginTop: "16px"}}, T.el), raw = h("details", {style: {marginTop: "10px"}, hidden: true}, h("summary", {text: "Raw log (for support)"}), h("pre", {class: "raw"}));
+  termWrap.append(raw);
+  $app.append(h("a", {class: "back", href: "#/"}, icon("back"), "Your lists"), head, h("div", {style: {marginTop: "20px"}}, actionBox, termWrap, results));
+  let stateKey = null, resKey = null, live = null, cur = null, failed = 0;
+
+  async function tick() {
+    if (my !== routeSeq) return;
+    let v;
+    try { v = await api("/api/jobs/" + encodeURIComponent(name)); failed = 0; }
+    catch (e) {
+      if (my !== routeSeq) return;
+      if (!cur) { actionBox.replaceChildren(h("div", {class: "note bad"}, h("h2", {text: "Couldn't open this list"}), h("p", {text: e.message}), h("div", {class: "actions"}, h("a", {class: "btn ghost", href: "#/"}, "Back to your lists")))); return; }
+      if (++failed === 3) toast(e.message);
+      pollTimer = setTimeout(tick, 4000); return;
+    }
+    if (my !== routeSeq) return;
+    cur = v; update(v);
+    const pricing = v.quote_job && v.quote_job.state === "working";
+    if (v.running || pricing) pollTimer = setTimeout(tick, 2500);
+  }
+  const refresh = () => { clearTimeout(pollTimer); stateKey = null; return tick(); };
+  async function act(action, body, okMsg) {
+    try { await api("/api/jobs/" + encodeURIComponent(name) + "/" + action, body || {}); if (okMsg) toast(okMsg, "ok"); }
+    catch (e) { toast(e.message); return false; }
+    if (action !== "open") await refresh(); return true;
+  }
+  const approve = (budget, limit) => { if (!budget || budget < 1) return toast("Enter a budget of at least $1."); return act("approve", {budget, limit: limit || null}); };
+
+  function update(v) {
+    const j = v.job, pricing = v.quote_job && v.quote_job.state === "working";
+    let st = pricing ? ["Working out the price", "warn", true] : v.running ? ["Running" + (v.trial ? " \u00b7 trial of 25" : ""), "run", true] : v.log.stopped && v.finished ? ["Stopped", "bad"] : !j.approved_budget ? [v.quote ? "Needs your OK" : "Getting the price", "warn"] : v.finished ? ["Done", "ok"] : ["Ready to start", "warn"];
+    head.replaceChildren(h("div", {style: {minWidth: 0}}, h("h1", {class: "page-title", text: j.name}), h("p", {class: "page-lead", style: {fontSize: "15px"}, text: describe(j)})), pill(st[0], st[1], st[2]));
+    const key = v.running ? "run|" + v.trial : JSON.stringify([v.finished, v.trial, v.log.stopped, j.approved_budget, v.quote, v.quote_job, v.fix_text, v.missing, v.left, v.status.fix, v.log.stopped && v.log.tail]);
+    if (key !== stateKey) { stateKey = key; live = null; actionBox.replaceChildren(...buildAction(v)); }
+    if (live) live(v);
+    T.update(v.log.feed, v.running || !!pricing, pricing ? "counting listings" : v.log.step_words);
+    raw.hidden = !v.log.tail; const pre = raw.querySelector("pre"); if (pre.textContent !== v.log.tail) pre.textContent = v.log.tail || "";
+    const rk = JSON.stringify([v.files, v.status, j.addons, v.running]);
+    if (rk !== resKey) { resKey = rk; results.replaceChildren(...resultsCard(v)); if (v.files.length) loadPreview(results, name, my); }
+    termWrap.hidden = false;
+  }
+
+  function buildAction(v) {
+    const j = v.job, q = v.quote, qj = v.quote_job, s = v.status, out = [];
+    const pricing = qj && qj.state === "working";
+    if (v.running) { const r = runCard(v, () => act("stop", {})); live = r.live; return [r.el]; }
+    if (pricing) return [h("div", {class: "card"}, h("div", {class: "row", style: {flexWrap: "nowrap"}}, h("span", {class: "spin"}), h("h2", {text: j.mode === "build" ? "Counting the listings in your areas\u2026" : "Working out your exact price\u2026"})),
+      h("p", {class: "muted", text: j.mode === "build" ? "We're counting the active listings in your areas first, so the price is based on real numbers. This can take a few minutes and costs a few cents. You can leave this page open." : "This only takes a moment."}),
+      h("div", {class: "bar indet", style: {marginTop: "16px"}}, h("i")))];
+    if (qj && qj.state === "error") out.push(h("div", {class: "note bad"}, h("h2", {text: "Couldn't work out the price"}), h("p", {text: qj.error}), h("div", {class: "actions"}, h("button", {class: "btn ghost", onclick: () => act("quote", {}), text: "Try again"}))));
+    if (v.log.stopped && v.finished) out.push(stoppedCard(v, approve, () => act("run", {})));
+    if (!j.approved_budget) {
+      if (v.missing && Object.keys(v.missing).length) out.push(inlineKeys(v, () => act("quote", {})));
+      if (q) out.push(priceCard(v, approve));
+      else if (!qj) out.push(h("div", {class: "card"}, h("h2", {text: "Let's work out what this costs"}), h("p", {class: "muted", text: "It's free to look."}), h("div", {class: "actions"}, h("button", {class: "btn", onclick: () => act("quote", {}), text: "See the price"}))));
+    } else if (!v.finished) out.push(h("div", {class: "card"}, h("h2", {text: "Approved up to " + money(j.approved_budget)}), h("p", {class: "muted", text: "Ready when you are. The window needs to stay open while it runs."}), h("div", {class: "actions"}, h("button", {class: "btn lg", onclick: () => act("run", {})}, icon("play"), "Start"))));
+    else if (v.trial && !v.log.stopped) out.push(h("div", {class: "note ok"}, h("h2", {text: "Trial finished"}), h("p", {text: "Here's a sample of what you'll get. If it looks right, run the rest. Nothing already done is paid for twice."}), h("div", {class: "actions"}, h("button", {class: "btn", onclick: () => act("run", {}), text: "Run the rest"}))));
+    else if (!v.log.stopped && v.left) out.push(h("div", {class: "note warn"}, h("h2", {text: "Mostly done"}), h("p", {text: num(v.left) + " couldn't be done this time: a website or service didn't answer. Trying again picks up only those, so nothing is paid for twice."}), h("div", {class: "actions"}, h("button", {class: "btn", onclick: () => act("run", {}), text: "Try again"}))));
+    else if (!v.log.stopped) out.push(h("div", {class: "note ok"}, h("h2", {text: "All done"}), h("p", {text: "Your files are below."})));
+    if (!pricing && v.fix_text && j.approved_budget && s.fix) out.push(h("div", {class: "card"}, h("h2", {text: "Some numbers aren't the agent's own cell"}),
+      h("p", {class: "muted", text: v.fix_text}), h("div", {class: "actions"}, h("button", {class: "btn", onclick: () => act("add", {addons: ["fix_phones"]}), text: "Find the real numbers (about " + money(s.fix.cost) + ")"}), h("span", {class: "small muted", text: "You'll see the exact price and approve it first."}))));
+    return out;
+  }
+  await tick();
+}
+
+function runCard(v, onStop) {
+  const j = v.job;
+  const words = h("h2"), pct = h("div", {class: "bar"}, h("i")), pl = h("div", {class: "l"}), sp = h("div", {class: "bar spend"}, h("i")), sl = h("div", {class: "l"});
+  const stop = h("button", {class: "btn danger sm", type: "button", onclick: () => { if (confirm("Stop the run? Everything done so far is kept.")) onStop(); }}, icon("stop"), "Stop");
+  const el = h("div", {class: "card"}, h("div", {class: "runtop"}, h("div", null, words), stop),
+    h("div", {class: "meter"}, pct, pl), h("div", {class: "meter"}, sp, sl),
+    h("p", {class: "small muted", style: {marginTop: "14px"}, text: "You can close this tab. The run keeps going as long as the Lead Builder window stays open. The computer won't go to sleep on its own while it runs, but closing a laptop's lid will pause it. If that happens, open the list again and click to continue: nothing is paid for twice."}));
+  const live = vv => {
+    const L = vv.log, s = vv.status, prog = L.progress;
+    words.textContent = L.step_words || "Getting going";
+    pct.classList.toggle("indet", !prog); pct.firstChild.style.width = prog ? Math.min(100, 100 * prog.done / Math.max(1, prog.total)) + "%" : "";
+    pl.replaceChildren(...[prog ? h("span", {text: num(prog.done) + " of " + num(prog.total)}) : h("span", {text: "Getting going\u2026"}), prog && prog.minutes_left != null ? h("span", {text: "about " + prog.minutes_left + " min left on this step"}) : null].filter(Boolean));
+    const b = vv.job.approved_budget || 0; sp.firstChild.style.width = b ? Math.min(100, 100 * s.spent / b) + "%" : "0%";
+    sl.replaceChildren(h("span", null, "Spent ", h("b", {text: money(s.spent)}), " of ", money(b), " approved"), h("span", {text: "stops itself at " + money(vv.budget_stop)}));
+  };
+  live(v); return {el, live};
+}
+
+function stoppedCard(v, approve, retry) {
   const budget = /budget/i.test(v.log.stopped);
-  return `<div class="note bad"><h2>Stopped</h2><p>${esc(v.log.stopped)}</p>
-    <p class="small">Everything finished so far is saved.${budget ? " Approve a bit more to carry on:" : " Fix that, then try again."}</p>
-    <div class="actions">${budget ? `<input class="budget" type="number" min="1" step="1" id="more" value="${Math.ceil((v.job.approved_budget || 0) * 1.5)}">
-      <button class="btn" onclick="approve(+document.getElementById('more').value)">Approve and continue</button>` :
-      `<button class="btn" onclick="act('run')">Try again</button><a href="#/keys" class="small">Check my keys</a>`}</div>
-    <details style="margin-top:10px"><summary>Details</summary><pre class="log">${esc(v.log.tail)}</pre></details></div>`;
+  const inp = h("input", {type: "number", min: "1", step: "1", id: "more", value: Math.ceil((v.job.approved_budget || 0) * 1.5), "aria-label": "New budget"});
+  return h("div", {class: "note bad"}, h("h2", {text: "Stopped"}), h("p", {text: v.log.stopped}),
+    h("p", {class: "small", text: "Everything finished so far is saved." + (budget ? " Approve a bit more to carry on." : " Fix that, then try again.")}),
+    h("div", {class: "actions"}, budget ? [h("div", {class: "money-in"}, "$", inp), h("button", {class: "btn", onclick: () => approve(+inp.value), text: "Approve & continue"})] : [h("button", {class: "btn", onclick: retry, text: "Try again"}), h("a", {class: "btn ghost", href: "#/keys", text: "Check my key"})]));
 }
-function priceCard(v) {
+
+function priceCard(v, approve) {
   const q = v.quote, blocked = v.missing && Object.keys(v.missing).length;
-  const rows = q.lines.filter(l => l.count || l.cost).map(l => `<tr><td>${esc(STEP_NAMES[l.step] || l.step)}</td>
-    <td class="num">${num(l.count)}</td><td class="num">${money(l.cost)}</td><td class="num">${l.hours < 0.1 ? "minutes" : l.hours + " h"}</td></tr>`).join("");
-  const suggested = Math.max(1, Math.round(q.spent_so_far + q.total * 1.1 + 0.5));
-  return `<div class="card">
-    <h2>The price</h2>
-    <p class="muted small">${q.listings ? num(q.listings) + " active listings, " : ""}${q.agents_estimated ? "about " : ""}${num(q.agents)} agents${q.agents_estimated ? " (exact once the listings are in)" : ""}.</p>
-    <div class="table-wrap"><table>
-      <tr><th>Step</th><th class="num">How many</th><th class="num">Cost</th><th class="num">Time</th></tr>
-      ${rows || `<tr><td colspan="4" class="muted">Nothing left to pay for.</td></tr>`}
-      <tr class="total"><td>Total</td><td></td><td class="num">${money(q.total)}</td><td class="num">${q.hours < 0.1 ? "minutes" : q.hours + " h"}</td></tr>
-    </table></div>
-    ${(q.notes || []).map(n => `<p class="muted small" style="margin-top:8px">Note: ${esc(n)}</p>`).join("")}
-    ${q.spent_so_far ? `<p class="muted small">Already spent on this list: ${money(q.spent_so_far)}. The budget below includes it.</p>` : ""}
-    <div class="actions">
-      <label class="small muted" for="budget">Spend up to $</label>
-      <input class="budget" type="number" min="1" step="1" id="budget" value="${suggested}">
-      <button class="btn" ${blocked ? "disabled" : ""} onclick="approve(+document.getElementById('budget').value)">Approve &amp; start</button>
-      <button class="btn ghost" ${blocked ? "disabled" : ""} onclick="approve(+document.getElementById('budget').value, 25)">Try 25 agents first</button>
-    </div>
-    ${blocked ? `<p class="small" style="margin-top:8px;color:var(--warn)">Add the keys above first.</p>` :
-      `<p class="muted small" style="margin-top:8px">It stops itself if spending passes this by 25%. Nothing is charged twice.</p>`}
-  </div>`;
+  const lines = (q.lines || []).filter(l => l.count || l.cost);
+  const suggested = Math.max(1, Math.round((q.spent_so_far || 0) + q.total * 1.1 + 0.5));
+  const inp = h("input", {type: "number", min: "1", step: "1", id: "budget", value: suggested, "aria-label": "Spend up to"});
+  return h("div", {class: "card"}, h("p", {class: "small faint", style: {fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", margin: 0}, text: "Your exact price"}),
+    h("div", {class: "price-hero"}, h("span", {class: "big", text: money(q.total)}), h("span", {class: "muted", text: "about " + hours(q.hours) + " \u00b7 " + (q.listings ? num(q.listings) + " listings \u00b7 " : "") + (q.agents_estimated ? "about " : "") + num(q.agents) + " agents" + (q.agents_estimated ? " (exact once the listings are in)" : "")})),
+    h("div", {class: "table-wrap"}, h("table", null, h("tr", null, h("th", {text: "Step"}), h("th", {class: "n", text: "How many"}), h("th", {class: "n", text: "Cost"}), h("th", {class: "n", text: "Time"})),
+      lines.length ? lines.map(l => h("tr", null, h("td", {title: l.what || "", text: STEP_NAMES[l.step] || l.what || l.step}), h("td", {class: "n", text: num(l.count)}), h("td", {class: "n", text: money(l.cost)}), h("td", {class: "n", text: hours(l.hours)}))) : h("tr", null, h("td", {colspan: "4", class: "muted", text: "Nothing left to pay for."})),
+      h("tr", {class: "total"}, h("td", {text: "Total"}), h("td"), h("td", {class: "n", text: money(q.total)}), h("td", {class: "n", text: hours(q.hours)})))),
+    (q.notes || []).map(n => h("p", {class: "small muted", style: {marginTop: "8px"}, text: "Note: " + n})),
+    q.spent_so_far ? h("p", {class: "small muted", style: {marginTop: "8px"}, text: "Already spent on this list: " + money(q.spent_so_far) + ". The budget below includes it."}) : null,
+    h("div", {class: "budget-row"}, h("label", {class: "muted", for: "budget", text: "Spend up to"}), h("div", {class: "money-in"}, "$", inp)),
+    h("div", {class: "actions"}, h("button", {class: "btn lg", disabled: !!blocked, onclick: () => approve(+inp.value), text: "Approve & start"}), h("button", {class: "btn ghost lg", disabled: !!blocked, onclick: () => approve(+inp.value, 25), text: "Try 25 agents first"})),
+    blocked ? h("p", {class: "small", style: {marginTop: "10px", color: "var(--warn)"}, text: "Add your key above first."}) : h("p", {class: "small muted", style: {marginTop: "10px"}, text: "It stops itself if spending goes 25% past your budget. Nothing is ever charged twice."}));
 }
+
+function inlineKeys(v, after) {
+  const wrap = h("div"); wrap.append(h("div", {class: "note warn", style: {marginBottom: "16px"}}, h("b", {text: "One key first."}), " Paste it in below, then Save & test."));
+  api("/api/keys").then(k => { (k.services || []).filter(s => (v.needs || []).includes(s.check) && (!s.present || s.state === "bad")).forEach(s => wrap.append(keyService(s, {onSaved: after}))); }).catch(e => toast(e.message));
+  return wrap;
+}
+
 function resultsCard(v) {
-  const s = v.status, j = v.job, a = j.addons;
-  if (!s.agents && !v.files.length) return "";
+  const s = v.status, j = v.job, a = j.addons || [];
+  if (!s.agents && !v.files.length) return [];
   const tiles = [[s.agents, "agents"]];
   if (a.includes("emails") || s.emails) tiles.push([s.emails, "emails"]);
   if (a.includes("verify_emails")) tiles.push([s.verified, "verified emails"]);
   if (a.includes("verify_phones")) tiles.push([s.mobile, "cell numbers"]);
   if (a.includes("fix_phones")) tiles.push([s.replaced, "real cells found"]);
-  if (a.includes("volume")) tiles.push([s.producers, `sold ${j.producer_min}+ last year`]);
-  const label = {"everyone": "Everyone", "email-ready": "Ready to email (verified)", "email-probably-ok": "Probably fine to email (can't be confirmed)", "email-ready-UNVERIFIED": "Emails, not verified yet",
-                 "cell-phones": "Cell phones", "producers": "Top producers"};
-  return `<div class="card"><h2>Your list</h2>
-    <div class="tiles" style="margin:10px 0 14px">${tiles.map(([n, t]) => `<div class="tile"><b>${num(n)}</b><span>${t}</span></div>`).join("")}</div>
-    ${v.files.length ? `<div class="files">${v.files.map(f => `<div class="file"><div><b>${esc(label[f.kind] || f.kind)}</b>
-      <div class="muted small">${num(f.rows)} rows · ${esc(f.file)}</div></div>
-      <a class="btn ghost" style="text-decoration:none;padding:8px 14px;border-radius:10px;border:1px solid var(--line);color:var(--ink);font-size:14px"
-         href="/api/jobs/${encodeURIComponent(j.name)}/download/${encodeURIComponent(f.file)}">Download</a></div>`).join("")}</div>
-    <div class="actions"><button class="btn ghost" onclick="act('open')">Open the folder</button></div>
-    <div id="preview"></div>` : ""}
-    <p class="muted small" style="margin-top:12px">Cold email has to follow CAN-SPAM (a real address and a working opt-out). Mass texting or auto-dialing cell phones falls under the TCPA and Do Not Call rules; check with a lawyer before doing that.</p>
-  </div>`;
+  if (a.includes("volume")) tiles.push([s.producers, "sold " + j.producer_min + "+ last year"]);
+  return [h("div", {class: "card", style: {marginTop: "16px"}}, h("h2", {text: v.running ? "So far" : "Your list"}),
+    h("div", {class: "tiles", style: {marginTop: "14px"}}, tiles.map(([n, t]) => h("div", {class: "tile"}, h("b", {text: num(n)}), h("span", {text: t})))),
+    v.files.length ? h("div", {style: {marginTop: "14px"}}, v.files.map(f => h("div", {class: "file"}, h("div", {class: "tx"}, h("b", {text: FILE_LABEL[f.kind] || f.kind}), h("small", {text: num(f.rows) + (f.rows === 1 ? " row" : " rows") + " \u00b7 " + (FILE_NOTE[f.kind] ? FILE_NOTE[f.kind] + " \u00b7 " : "") + f.file})),
+      h("a", {class: "btn ghost sm", href: "/api/jobs/" + encodeURIComponent(j.name) + "/download/" + encodeURIComponent(f.file), download: ""}, icon("down"), "Download"))),
+      h("div", {class: "actions"}, h("button", {class: "btn ghost sm", onclick: () => api("/api/jobs/" + encodeURIComponent(j.name) + "/open", {}).then(() => toast("Opened the folder.", "ok")).catch(e => toast(e.message))}, icon("folder"), "Open the folder")),
+      h("div", {class: "preview", style: {marginTop: "6px"}})) : null,
+    h("p", {class: "legal", text: "Before you use these: cold email has to follow CAN-SPAM (a real sender address and a working opt-out). Mass texting or auto-dialing cell phones falls under the TCPA and Do Not Call rules, so check with a lawyer before doing that."}))];
 }
-async function loadPreview(name) {
+async function loadPreview(root, name, my) {
   try {
     const p = await api("/api/jobs/" + encodeURIComponent(name) + "/preview");
-    const el = document.getElementById("preview");
-    if (!el || !p.rows.length) return;
-    el.innerHTML = `<p class="muted small" style="margin-top:14px">A sample:</p><div class="table-wrap"><table>
-      <tr>${p.columns.map(c => `<th>${esc(c.replace(/_/g, " "))}</th>`).join("")}</tr>
-      ${p.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</table></div>`;
-  } catch (e) { /* the preview is a nicety */ }
-}
-async function act(action, body = {}) {
-  stopPolling();
-  try {
-    await api("/api/jobs/" + encodeURIComponent(current.job.name) + "/" + action, body);
-    if (action === "open") return toast("Opened the folder.");
-    renderJob(current.job.name);
-  } catch (e) { toast(e.message); }
-}
-function approve(budget, limit) {
-  if (!budget || budget < 1) return toast("Enter a budget of at least $1.");
-  act("approve", {budget, limit: limit || null});
+    const el = root.querySelector(".preview"); if (!el || my !== routeSeq || !p.rows || !p.rows.length) return;
+    el.replaceChildren(h("div", {class: "sub-h", text: "A sample"}), h("div", {class: "table-wrap"}, h("table", null, h("tr", null, p.columns.map(c => h("th", {text: c.replace(/_/g, " ")}))), p.rows.map(r => h("tr", null, r.map(c => h("td", {text: c})))))));
+  } catch (e) { /* a nicety */ }
 }
 
-// --- keys ------------------------------------------------------------------
-async function keysCard(needs, inline) {
+// ---- keys ----
+function setKStat(el, s) {
+  el.className = "kstat " + (s.state === "ok" ? "ok" : s.state === "bad" ? "bad" : "idle");
+  el.replaceChildren(...[s.state === "ok" ? icon("check") : s.state === "bad" ? icon("x") : "", s.state ? (s.message || (s.state === "ok" ? "Works." : "That didn't work.")) : s.present ? "A key is saved on this computer." : "No key yet."].filter(Boolean));
+}
+function keyService(s, opts) {
+  opts = opts || {};
+  const isMonid = /monid/i.test(s.title + s.check);
+  const stat = h("div"), btn = h("button", {class: "btn", type: "button"}, "Save & test");
+  const inputs = s.fields.map(f => {
+    const inp = h("input", {class: "input", type: "password", autocomplete: "off", spellcheck: "false", "data-key": f.key, "aria-label": f.label, placeholder: f.saved ? "Saved: " + f.saved + " (paste to replace)" : "Paste your key here"});
+    const eye = h("button", {class: "btn ghost sm", type: "button", "aria-label": "Show or hide the key", onclick: () => { inp.type = inp.type === "password" ? "text" : "password"; }}, icon("eye"));
+    return {f, inp, row: h("div", {class: "pw"}, inp, eye)};
+  });
+  const li = [];
+  li.push(h("li", {class: (s.present && s.state !== "bad") ? "done" : ""}, h("b", {text: isMonid ? "Make a Monid account" : s.link_text}), h("p", {text: isMonid ? "Free to sign up." : s.for}), h("div", {style: {marginTop: "10px"}}, h("a", {class: "btn ghost sm", href: s.link, target: "_blank", rel: "noopener"}, s.link_text, icon("arrow")))));
+  if (isMonid) li.push(h("li", null, h("b", {text: "Add a little credit"}), h("p", {text: "It's pay as you go, and you only pay for what you use. Every price is shown before anything is spent."})));
+  li.push(h("li", null, h("b", {text: isMonid ? "Create an API key" : "Copy your key"}), h("p", {text: s.hint || "Look for \u201cAPI keys\u201d in your account, create one, and copy it."})));
+  li.push(h("li", null, h("b", {text: "Paste it here"}), h("p", {text: "It stays on this computer. We only send it to " + (isMonid ? "Monid" : "that service") + "."}), inputs.map(i => [h("label", {class: "small muted", style: {display: "block", marginTop: "10px"}}, i.f.label), i.row])));
+  setKStat(stat, s);
+  btn.addEventListener("click", async () => {
+    const vals = {}; inputs.forEach(i => { if (i.inp.value.trim()) vals[i.f.key] = i.inp.value.trim(); });
+    if (!Object.keys(vals).length) return toast("Paste a key first.");
+    btn.disabled = true; btn.replaceChildren(h("span", {class: "spin"}), "Testing\u2026");
+    try {
+      const k = await api("/api/keys", vals), mine = (k.services || []).find(x => x.check === s.check) || s;
+      setKStat(stat, mine);
+      if (mine.state === "ok") { inputs.forEach((i, n) => { i.inp.value = ""; i.inp.type = "password"; const nf = mine.fields[n]; if (nf) i.inp.placeholder = "Saved: " + nf.saved + " (paste to replace)"; }); if (home) home.keys.monid = home.keys.monid || isMonid; document.getElementById("keydot").hidden = !!(home && home.keys.monid); toast("Saved. It works.", "ok"); if (opts.onSaved) opts.onSaved(k); }
+    } catch (e) { setKStat(stat, {state: "bad", message: e.message}); }
+    btn.disabled = false; btn.replaceChildren("Save & test");
+  });
+  return h("section", {class: "card keycard"}, h("div", {class: "kh"}, h("h2", {text: s.title}), h("p", {class: "muted", text: s.for}), s.price ? h("p", {class: "small faint", text: s.price}) : null),
+    h("ol", {class: "steps"}, li), h("div", {class: "kfoot"}, btn, h("div", {style: {flex: "1 1 220px"}}, stat)));
+}
+async function renderKeysPage() {
   const k = await api("/api/keys");
-  const services = k.services.filter(s => !inline || (needs.includes(s.check) && (!s.present || s.state === "bad")));
-  if (!services.length) return "";
-  return `${inline ? `<div class="note warn"><b>${services.length === 1 ? "One key first." : "A couple of keys first."}</b> ${services.length === 1 ? "The service below gives you a key" : "Each service below gives you a key"} when you sign up. Paste it in, then Save &amp; test.</div>` : ""}
-    ${services.map(keyCard).join("")}
-    <div class="actions" style="margin:-2px 0 16px"><button class="btn" onclick="saveKeys(${inline})">Save &amp; test</button></div>`;
-}
-function keyCard(s) {
-  const status = s.state === "ok" ? `<p class="small" style="color:var(--ok)">✓ ${esc(s.message)}</p>` :
-                 s.state === "bad" ? `<p class="small" style="color:var(--bad)">Problem: ${esc(s.message)}</p>` :
-                 s.present ? `<p class="small muted">Saved.</p>` : "";
-  return `<div class="card key-card"><h2>${esc(s.title)}</h2><p>${esc(s.for)}</p>
-    <p class="muted small">${esc(s.price)}</p>
-    <a href="${esc(s.link)}" target="_blank" rel="noopener" class="small">${esc(s.link_text)} →</a>
-    ${s.hint ? `<p class="muted small">${esc(s.hint)}</p>` : ""}
-    ${s.fields.map(f => `<label>${esc(f.label)}<input type="password" data-key="${esc(f.key)}" autocomplete="off" spellcheck="false" placeholder="${esc(f.saved || "paste here")}"></label>`).join("")}
-    ${status}</div>`;
-}
-async function saveKeys(inline) {
-  const values = {};
-  document.querySelectorAll("input[data-key]").forEach(i => { if (i.value.trim()) values[i.dataset.key] = i.value.trim(); });
-  if (!Object.keys(values).length) return toast("Paste a key first.");
-  toast("Testing your keys…");
-  try {
-    const k = await api("/api/keys", values);
-    const bad = k.services.filter(s => s.state === "bad");
-    if (bad.length) toast("That key didn't work: " + bad.map(s => s.title.split(":")[0]).join(", "));
-    else toast("Saved. It works.");
-    if (inline) { await api("/api/jobs/" + encodeURIComponent(current.job.name) + "/quote", {}); renderJob(current.job.name); }
-    else renderKeysPage(k);
-  } catch (e) { toast(e.message); }
-}
-async function renderKeysPage(checked) {
-  const k = checked || await api("/api/keys");
-  $app.innerHTML = `<h1>Keys</h1>
-    <p class="lead">One Monid key runs everything. It stays on this computer.</p>
-    ${k.services.map(keyCard).join("")}
-    <div class="actions"><button class="btn" onclick="saveKeys(false)">Save &amp; test</button></div>`;
+  $app.append(h("h1", {class: "page-title", text: "Your key"}), h("p", {class: "page-lead", text: "One Monid key runs everything. It stays on this computer."}),
+    h("div", {style: {marginTop: "24px"}}, (k.services || []).map(s => keyService(s))));
 }
 
 route();

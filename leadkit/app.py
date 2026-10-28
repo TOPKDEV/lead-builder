@@ -39,6 +39,12 @@ STEP_WORDS = {
 }
 
 
+# UTF-8 throughout: Windows would otherwise write the log in its old code
+# page, and a "→" or "✓" in it would stop the run. LEADS_FEED: print a line
+# per agent for the live view.
+RUN_ENV = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "LEADS_FEED": "1"}
+
+
 class Runs:
     """Run processes, one per job. The pid is also written to the job's
     folder so a restarted app still knows a run is going."""
@@ -57,7 +63,7 @@ class Runs:
                 if proc.poll() is None:
                     return True
                 self.procs.pop(job.name)
-                (job.dir / "run.exit").write_text(str(proc.returncode))
+                (job.dir / "run.exit").write_text(str(proc.returncode), encoding="utf-8")
         pid_file = self._pid_file(job)
         if not pid_file.exists():
             return False
@@ -67,7 +73,7 @@ class Runs:
             pid_file.unlink(missing_ok=True)
             return False
         try:
-            os.kill(int(pid_file.read_text()), 0)
+            os.kill(int(pid_file.read_text(encoding="utf-8")), 0)
             return True
         except (OSError, ValueError):
             pid_file.unlink(missing_ok=True)
@@ -81,13 +87,13 @@ class Runs:
             cmd += ["--limit", str(limit)]
         if sys.platform == "darwin":
             cmd = ["caffeinate", "-i"] + cmd  # keep the Mac awake while it runs
-        log = (job.dir / "run.log").open("w")
+        log = (job.dir / "run.log").open("w", encoding="utf-8")
         (job.dir / "run.exit").unlink(missing_ok=True)
-        (job.dir / "run.limit").write_text(str(limit or ""))
-        proc = subprocess.Popen(cmd, cwd=settings.ROOT, stdout=log, stderr=subprocess.STDOUT)
+        (job.dir / "run.limit").write_text(str(limit or ""), encoding="utf-8")
+        proc = subprocess.Popen(cmd, cwd=settings.ROOT, stdout=log, stderr=subprocess.STDOUT, env=RUN_ENV)
         with self.lock:
             self.procs[job.name] = proc
-        self._pid_file(job).write_text(str(proc.pid))
+        self._pid_file(job).write_text(str(proc.pid), encoding="utf-8")
 
     def stop(self, job):
         with self.lock:
@@ -96,22 +102,30 @@ class Runs:
             proc.terminate()
         elif self._pid_file(job).exists() and not sys.platform.startswith("win"):
             try:
-                os.kill(int(self._pid_file(job).read_text()), 15)
+                os.kill(int(self._pid_file(job).read_text(encoding="utf-8")), 15)
             except (OSError, ValueError):
                 pass
         self._pid_file(job).unlink(missing_ok=True)
-        (job.dir / "run.exit").write_text("stopped")
+        (job.dir / "run.exit").write_text("stopped", encoding="utf-8")
 
 
 RUNS = Runs()
 QUOTES: dict[str, dict] = {}   # job name -> {"state": "working"|"done"|"error", ...}
 
 
-def read_log(job) -> dict:
-    path = job.dir / "run.log"
+def read_log(job, name: str = "run.log") -> dict:
+    path = job.dir / name
     if not path.exists():
-        return {"step": None, "progress": None, "stopped": None, "tail": ""}
-    lines = path.read_text(errors="replace").splitlines()
+        return {"step": None, "progress": None, "stopped": None, "tail": "", "feed": []}
+    raw = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    # "~ 12:01:33 emails ok Jane Doe -> jane@x.com": the live view's lines.
+    feed, lines = [], []
+    for line in raw:
+        parts = line.split(" ", 4) if line.startswith("~ ") else None
+        if parts and len(parts) == 5:
+            feed.append({"time": parts[1], "step": parts[2], "tone": parts[3], "text": parts[4]})
+        else:
+            lines.append(line)
     step = progress = stopped = None
     for line in lines:
         if m := _STEP.match(line):
@@ -124,7 +138,7 @@ def read_log(job) -> dict:
     if not stopped and any(l.startswith("Traceback") for l in lines):
         stopped = "Something went wrong. The details are in the log below."
     return {"step": step, "step_words": STEP_WORDS.get(step or "", step), "progress": progress,
-            "stopped": stopped, "tail": "\n".join(lines[-40:])}
+            "stopped": stopped, "tail": "\n".join(lines[-40:]), "feed": feed[-200:]}
 
 
 def job_view(name: str) -> dict:
@@ -139,12 +153,14 @@ def job_view(name: str) -> dict:
                                               "approved_budget", "created_at", "source_file")},
         "quote": job.quote, "quote_job": QUOTES.get(name),
         "running": running,
-        "finished": exit_file.read_text() if exit_file.exists() and not running else None,
-        "trial": bool(limit_file.exists() and limit_file.read_text().strip()),
+        "finished": exit_file.read_text(encoding="utf-8") if exit_file.exists() and not running else None,
+        "trial": bool(limit_file.exists() and limit_file.read_text(encoding="utf-8").strip()),
         "log": log, "status": actions.status(job), "files": actions.files(job),
         "missing": estimate.missing_keys(job), "needs": sorted(estimate.services_needed(job)),
         "budget_stop": round((job.approved_budget or 0) * settings.BUDGET_OVERRUN, 2),
     }
+    if (QUOTES.get(name) or {}).get("state") == "working":
+        view["log"]["feed"] = read_log(job, "quote.log")["feed"]  # the listing count, live
     # After a run, anything still to do means some agents failed this time.
     view["left"] = 0
     if view["finished"] and job.approved_budget:
@@ -160,6 +176,20 @@ def start_quote(name: str):
 
     def work():
         try:
+            job = jobs.load(name)
+            store = job.store()
+            counting = job.mode == "build" and not all(store.market_done(m["label"]) for m in job.markets)
+            store.close()
+            if counting:
+                # Counting a county takes minutes; done in its own process,
+                # like a run, so the page can stream it from quote.log.
+                with (job.dir / "quote.log").open("w", encoding="utf-8") as log:
+                    code = subprocess.call([sys.executable, "-u", str(LEADS_PY), "quote", name], cwd=settings.ROOT,
+                                           stdout=log, stderr=subprocess.STDOUT, env=RUN_ENV)
+                if code:
+                    tail = (job.dir / "quote.log").read_text(encoding="utf-8", errors="replace").strip().splitlines()
+                    raise actions.ActionError(next((l for l in reversed(tail) if l.strip() and not l.startswith("~ ")),
+                                                   "Counting the listings failed."))
             QUOTES[name] = {"state": "done", "result": actions.quote(jobs.load(name))}
         except Exception as e:  # shown to the person as-is
             QUOTES[name] = {"state": "error", "error": str(e)}
@@ -246,7 +276,7 @@ class Handler(BaseHTTPRequestHandler):
         q = parse_qs(url.query)
         try:
             if not parts:
-                html = PAGE.read_text().replace("__TOKEN__", self.token)
+                html = PAGE.read_text(encoding="utf-8").replace("__TOKEN__", self.token)
                 return self._send(200, html, "text/html")
             if parts == ["api", "home"]:
                 listing = []
@@ -261,6 +291,18 @@ class Handler(BaseHTTPRequestHandler):
                                         "addons": ADDONS, "prices": unit_prices()})
             if parts == ["api", "keys"]:
                 return self._send(200, keys_view())
+            if parts == ["api", "places"]:
+                # The built-in catalog of US counties, cities and ZIP codes: instant and free.
+                from leadkit import places
+                query = (q.get("q") or [""])[0].strip()
+                found = places.search(query) if query else []
+                return self._send(200, {"places": [{**p, "population": p["pop"]} for p in found]})
+            if parts == ["api", "estimate"]:
+                one = lambda k, d="": (q.get(k) or [d])[0]  # noqa: E731
+                return self._send(200, estimate.rough(
+                    one("mode", "build"), population=int(float(one("population", "0") or 0)),
+                    rows=int(float(one("rows", "0") or 0)), min_listings=int(one("min_listings", "1") or 1),
+                    addons=[a for a in one("addons").split(",") if a], phones_for=one("phones_for", "all")))
             if parts == ["api", "markets"]:
                 query = (q.get("q") or [""])[0].strip()
                 return self._send(200, {"markets": actions.find_markets(query) if query else []})
@@ -345,6 +387,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(open_browser: bool = True, port: int = 0, on_ready=None):
+    from leadkit import places
+    threading.Thread(target=places.search, args=("a",), daemon=True).start()  # load the catalog now, not on the first keystroke
     Handler.token = secrets.token_urlsafe(16)
     server = None
     for p in ([port] if port else [8780, 8781, 8782, 0]):

@@ -73,6 +73,9 @@ EMAIL_HIT_RATE = 0.5
 
 # --- Pacing -----------------------------------------------------------------
 LISTING_WORKERS = int(env_float("LISTING_WORKERS", 8))
+# Zillow counts cost a flat $0.0008 and mostly wait on the network, so more
+# at once costs nothing extra and makes a county's quote come back sooner.
+COUNT_WORKERS = int(env_float("COUNT_WORKERS", 16))
 EMAIL_WORKERS = int(env_float("EMAIL_WORKERS", 8))
 HEADLESS_WORKERS = int(env_float("HEADLESS_WORKERS", 3))  # 3 Chromes fit in 16 GB
 LOOKUP_WORKERS = int(env_float("LOOKUP_WORKERS", 8))
