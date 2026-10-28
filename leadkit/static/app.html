@@ -932,8 +932,8 @@ function resultsCard(v) {
   const tiles = [[s.agents, "agents"]];
   if (a.includes("emails") || s.emails) tiles.push([s.emails, "emails"]);
   if (a.includes("verify_emails")) tiles.push([s.verified, "verified emails"]);
-  if (a.includes("verify_phones")) tiles.push([s.mobile, "cell numbers"]);
-  if (a.includes("fix_phones")) tiles.push([s.replaced, "real cells found"]);
+  if (a.includes("verify_phones")) tiles.push([s.mobile, "verified cell numbers"]);
+  if (a.includes("fix_phones")) tiles.push([s.replaced, "wrong numbers replaced"]);
   if (a.includes("volume")) tiles.push([s.producers, "sold " + j.producer_min + "+ last year"]);
   return [h("div", {class: "card", style: {marginTop: "16px"}}, h("h2", {text: v.running ? "So far" : "Your list"}),
     h("div", {class: "tiles", style: {marginTop: "14px"}}, tiles.map(([n, t]) => h("div", {class: "tile"}, h("b", {text: num(n)}), h("span", {text: t})))),
