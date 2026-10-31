@@ -21,7 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-from leadkit import actions, doctor, emailverify, estimate, jobs, keys_page, realtor, settings
+from leadkit import actions, doctor, emailverify, estimate, jobs, keys_page, realtor, settings, skiplist
 from leadkit.jobs import ADDONS
 
 PAGE = Path(__file__).parent / "static" / "app.html"
@@ -294,6 +294,8 @@ class Handler(BaseHTTPRequestHandler):
                                         "addons": ADDONS, "prices": unit_prices()})
             if parts == ["api", "keys"]:
                 return self._send(200, keys_view())
+            if parts == ["api", "skip"]:
+                return self._send(200, skiplist.view())
             if parts == ["api", "places"]:
                 # The built-in catalog of US counties, cities and ZIP codes: instant and free.
                 from leadkit import places
@@ -353,6 +355,26 @@ class Handler(BaseHTTPRequestHandler):
                     settings.reload_keys()
                 touched = {name for name, keys, _ in doctor.CHECKS if set(keys) & set(values)}
                 return self._send(200, keys_view(doctor.check_all(only=touched)))
+            if parts == ["api", "skip", "add"]:
+                added = skiplist.add_text(str(body.get("text") or ""))
+                if not added and not str(body.get("text") or "").strip():
+                    return self._error("Type a name, phone number or email first.")
+                actions.refresh_skip_list()
+                return self._send(200, {**skiplist.view(), "added": added})
+            if parts == ["api", "skip", "file"]:
+                path = Path(str(body.get("path") or ""))
+                if path.resolve().parent != UPLOADS.resolve():
+                    return self._error("Upload the file again.")
+                try:
+                    done = skiplist.add_file(path, source=body.get("name"))
+                except ValueError as e:
+                    return self._error(str(e))
+                actions.refresh_skip_list()
+                return self._send(200, {**skiplist.view(), **done})
+            if parts == ["api", "skip", "remove"]:
+                skiplist.remove(body.get("id"), body.get("source"))
+                actions.refresh_skip_list()
+                return self._send(200, skiplist.view())
             if parts == ["api", "jobs"]:
                 result = actions.create_job(
                     body.get("name") or "my-list", body.get("mode", ""), markets=body.get("markets") or [],

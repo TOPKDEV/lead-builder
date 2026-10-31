@@ -89,6 +89,21 @@ def cmd_scout(args):
         print(f"  {kind:<5} {path}")
 
 
+def cmd_skip(args):
+    """The skip list: people to leave out of every list."""
+    from leadkit import skiplist
+    if args.what == "add":
+        print(f"Added {skiplist.add_text(chr(10).join(args.values))}.")
+    elif args.what == "file":
+        done = skiplist.add_file(Path(args.values[0]).expanduser())
+        print(f"Added {done['added']:,} of {done['rows']:,} rows from {done['source']}.")
+    elif args.what == "clear":
+        skiplist.clear()
+    if args.what != "list":
+        actions.refresh_skip_list()
+    print(f"{skiplist.view()['count']:,} people on the skip list.")
+
+
 def cmd_try(args):
     """Run one Monid tool once and save exactly what it answers, so a new
     tool can be wired in from a real answer instead of a guess."""
@@ -275,6 +290,10 @@ def main():
     s.add_argument("--query", action="append", help="also search for this (repeatable)")
     s.add_argument("--quick", action="store_true", help="skip the per-tool details (prices may be missing)")
     s.set_defaults(fn=cmd_scout)
+    s = sub.add_parser("skip", help="people to leave out of every list (names, phones, emails, or a file)")
+    s.add_argument("what", choices=["add", "file", "list", "clear"])
+    s.add_argument("values", nargs="*", help="add: names, phones or emails. file: a CSV or Excel path")
+    s.set_defaults(fn=cmd_skip)
     s = sub.add_parser("try", help="run one Monid tool once and save its full answer")
     s.add_argument("provider")
     s.add_argument("endpoint")

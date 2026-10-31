@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from collections import Counter
 
 from leadkit import (cellfinder, emailverify, estimate, linetype, monid, phones, realtor, rollup, search, settings,
-                     skiptrace, volume)
+                     skiplist, skiptrace, volume)
 from leadkit.emails import headless
 from leadkit.emails.finder import find_email
 from leadkit.http import Session
@@ -488,11 +488,16 @@ def _run(job: Job, only: str | None, limit: int | None) -> None:
     store = job.store()
     meter = Meter(store, job.approved_budget)
     try:
+        skiplist.apply(store)
         for step in job.steps():
             if only and step != only:
                 continue
             print(f"\n== {step} ==", flush=True)
             STEPS[step](job, store, meter, limit)
+            # New agents, or a new number on one, can match the skip list.
+            left_out = skiplist.apply(store)
+            if left_out and step in ("agents", "fix_phones"):
+                print(f"  {left_out:,} left out: on your skip list")
             # Fresh files after every step, so a long run is useful before it
             # ends; counting finds no agents, so there's nothing to write yet.
             if step != "count":

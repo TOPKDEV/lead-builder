@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS agents (
 CREATE TABLE IF NOT EXISTS usage (
     provider TEXT PRIMARY KEY, calls INTEGER DEFAULT 0, units REAL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS skipped_agents (  -- on the skip list: kept aside, see skiplist.py
+    key TEXT PRIMARY KEY, reason TEXT, data TEXT
+);
 """
 
 LISTING_COLS = ["mls_number", "market", "address", "city", "state", "zip_code", "price", "beds",

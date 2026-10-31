@@ -140,6 +140,13 @@ in their own "probably" file. In testing that took agents with a cell from
 | Finding missing emails | Google search | ~$0.0024/agent |
 | Top producers | homes.com via Firecrawl, then the agent's Zillow profile for the ones it doesn't have | ~$0.01/agent |
 
+The same page has their **skip list**: people to leave out of every list
+(clients, a list they're already working, do-not-call numbers). If they mention
+any, offer it once. From the chat: `leads.py skip add "Jane Doe" "954-555-0100"`
+or `leads.py skip file "/path/to/list.csv"`. It matches on name, phone or email,
+removes people before anything is paid for, and keeps them out of every
+spreadsheet except `*-left-out-*.csv`.
+
 ## 5. The price, and their yes
 
 ```
@@ -305,6 +312,7 @@ leads.py run NAME [--limit N] [--only STEP]
 leads.py status NAME
 leads.py export NAME                 rewrite the CSVs
 leads.py jobs
+leads.py skip add|file|list|clear    people to leave out of every list
 leads.py scout [--query "..."]       search Monid's catalog for useful tools, with live prices (free)
 ```
 

@@ -312,7 +312,7 @@ pre.raw { background: var(--sunk); border: 1px solid var(--line); border-radius:
 <body>
 <header class="top"><div class="top-in">
   <a class="brand" href="#/"><span class="mark" id="mark"></span>Lead Builder</a>
-  <nav class="nav"><a href="#/" id="nav-home">Your lists</a><a href="#/keys" id="nav-keys">Key<i class="dot" id="keydot" hidden></i></a></nav>
+  <nav class="nav"><a href="#/" id="nav-home">Your lists</a><a href="#/keys" id="nav-keys">Keys &amp; skip list<i class="dot" id="keydot" hidden></i></a></nav>
 </div></header>
 <main id="app"></main>
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
@@ -805,8 +805,8 @@ function makeTerminal() {
 
 // ---- job page ----
 const STEP_NAMES = {count: "Count listings", listings: "Get listings (names, phones, emails)", agents: "Merge into agents", emails: "Find emails", deep_emails: "Chrome email pass", verify_emails: "Verify emails", volume: "homes.com sales", verify_phones: "Check phone numbers", fix_phones: "Find real cell numbers"};
-const FILE_LABEL = {"everyone": "Everyone", "email-ready": "Ready to email (verified)", "email-probably-ok": "Probably fine to email (can't be confirmed)", "email-ready-UNVERIFIED": "Emails, not verified yet", "cell-phones": "Cell phones", "cell-phones-probably": "Probably cells (owner unconfirmed)", "producers": "Top producers"};
-const FILE_NOTE = {"everyone": "Your master copy, with everything found", "email-ready": "Upload to your email tool", "email-ready-UNVERIFIED": "Verify these before sending", "cell-phones": "For calling and texting", "cell-phones-probably": "A carrier says cell; no record shows whose", "producers": "Your best prospects"};
+const FILE_LABEL = {"everyone": "Everyone", "email-ready": "Ready to email (verified)", "email-probably-ok": "Probably fine to email (can't be confirmed)", "email-ready-UNVERIFIED": "Emails, not verified yet", "cell-phones": "Cell phones", "cell-phones-probably": "Probably cells (owner unconfirmed)", "producers": "Top producers", "left-out": "Left out (on your skip list)"};
+const FILE_NOTE = {"everyone": "Your master copy, with everything found", "email-ready": "Upload to your email tool", "email-ready-UNVERIFIED": "Verify these before sending", "cell-phones": "For calling and texting", "cell-phones-probably": "A carrier says cell; no record shows whose", "producers": "Your best prospects", "left-out": "Not for calling. Here so you can see who was removed"};
 
 async function renderJob(name, my) {
   const T = makeTerminal();
@@ -935,6 +935,7 @@ function resultsCard(v) {
   if (a.includes("verify_phones")) tiles.push([s.mobile, "verified cell numbers"]);
   if (s.probably_cells) tiles.push([s.probably_cells, "probably cells"]);
   if (a.includes("fix_phones")) tiles.push([s.replaced, "wrong numbers replaced"]);
+  if (s.left_out) tiles.push([s.left_out, "left out (skip list)"]);
   if (a.includes("volume")) tiles.push([s.producers, "sold " + j.producer_min + "+ last year"]);
   return [h("div", {class: "card", style: {marginTop: "16px"}}, h("h2", {text: v.running ? "So far" : "Your list"}),
     h("div", {class: "tiles", style: {marginTop: "14px"}}, tiles.map(([n, t]) => h("div", {class: "tile"}, h("b", {text: num(n)}), h("span", {text: t})))),
@@ -987,10 +988,38 @@ function keyService(s, opts) {
   return h("section", {class: "card keycard"}, h("div", {class: "kh"}, h("h2", {text: s.title}), h("p", {class: "muted", text: s.for}), s.price ? h("p", {class: "small faint", text: s.price}) : null),
     h("ol", {class: "steps"}, li), h("div", {class: "kfoot"}, btn, h("div", {style: {flex: "1 1 220px"}}, stat)));
 }
+function skipCard(first) {
+  const list = h("div"), count = h("p", {class: "small muted"}), status = h("div", {class: "small muted", style: {marginTop: "8px"}});
+  const box = h("textarea", {class: "input", rows: "4", placeholder: "One per line: a name, a phone number, an email, or all three\nJane Doe\n954-555-0100\njane@example.com", "aria-label": "Names, phone numbers or emails to leave out", style: {height: "auto", padding: "8px 10px", resize: "vertical"}});
+  const fileIn = h("input", {type: "file", accept: ".csv,.xlsx,.xlsm", hidden: true, "aria-label": "Choose a CSV or Excel file to leave out"});
+  const paint = v => {
+    count.textContent = v.count ? num(v.count) + (v.count === 1 ? " person" : " people") + " on your skip list." : "Nobody on your skip list yet.";
+    list.replaceChildren(...v.files.map(f => h("div", {class: "file"}, h("div", {class: "tx"}, h("b", {text: f.source}), h("small", {text: num(f.count) + (f.count === 1 ? " person" : " people")})), h("button", {class: "btn ghost sm", type: "button", onclick: () => drop({source: f.source}), text: "Remove"}))),
+      ...v.typed.slice(0, 50).map(e => h("div", {class: "file"}, h("div", {class: "tx"}, h("b", {text: e.label}), h("small", {text: "Typed in"})), h("button", {class: "btn ghost sm", type: "button", onclick: () => drop({id: e.id}), text: "Remove"}))));
+  };
+  const drop = async body => { try { paint(await api("/api/skip/remove", body)); } catch (e) { toast(e.message); } };
+  const add = async () => {
+    try { const v = await api("/api/skip/add", {text: box.value}); box.value = ""; paint(v); toast(v.added ? "Added to your skip list." : "Already on your skip list.", "ok"); } catch (e) { toast(e.message); }
+  };
+  fileIn.addEventListener("change", async () => {
+    const f = fileIn.files[0]; fileIn.value = ""; if (!f) return;
+    status.textContent = "Reading your file\u2026";
+    try {
+      const up = await api("/api/upload", f, {raw: true, headers: {"X-Filename": encodeURIComponent(f.name), "Content-Type": "application/octet-stream"}});
+      const v = await api("/api/skip/file", {path: up.path, name: up.filename});
+      paint(v); status.textContent = "Added " + num(v.added) + " of " + num(v.rows) + " rows." + (v.added < v.rows ? " The rest were repeats or had no name, phone or email." : "");
+    } catch (e) { status.textContent = ""; toast(e.message); }
+  });
+  api("/api/skip").then(paint).catch(e => toast(e.message));
+  return h("section", {class: "card", style: {marginTop: "12px"}}, h("h2", {text: "Skip list"}),
+    h("p", {class: "muted", text: "People to leave out of every list: your clients, a list you're already working, or do-not-call numbers. Anyone on it is removed before anything is paid for. It matches on name, phone or email, and it stays on this computer."}), count, list,
+    h("div", {class: "sub-h", text: "Add a file"}), h("button", {class: "btn ghost", type: "button", onclick: () => fileIn.click()}, icon("up"), "Upload a CSV or Excel file"), fileIn, status,
+    h("div", {class: "sub-h", text: "Or type them in"}), box, h("div", {class: "actions"}, h("button", {class: "btn", type: "button", onclick: add, text: "Add to skip list"})));
+}
 async function renderKeysPage() {
   const k = await api("/api/keys");
-  $app.append(h("h1", {class: "page-title", text: "Your key"}), h("p", {class: "page-lead", text: "One Monid key runs everything. Twilio is recommended for more cell numbers. Keys stay on this computer."}),
-    h("div", {style: {marginTop: "24px"}}, (k.services || []).map(s => keyService(s))));
+  $app.append(h("h1", {class: "page-title", text: "Keys & skip list"}), h("p", {class: "page-lead", text: "One Monid key runs everything. Twilio is recommended for more cell numbers. Everything here stays on this computer."}),
+    h("div", {style: {marginTop: "24px"}}, (k.services || []).map(s => keyService(s)), skipCard()));
 }
 
 route();

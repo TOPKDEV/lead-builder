@@ -20,7 +20,7 @@ import csv
 import json
 from datetime import date
 
-from leadkit import phones, volume
+from leadkit import phones, skiplist, volume
 from leadkit.jobs import Job
 
 COLUMNS = [
@@ -110,7 +110,9 @@ def _write(path, rows: list[dict]) -> int:
 
 def export(job: Job) -> dict[str, tuple[str, int]]:
     store = job.store()
+    skiplist.apply(store)
     agents = store.agents()
+    left_out = skiplist.left_out(store)
     store.close()
     job.export_dir.mkdir(parents=True, exist_ok=True)
     stamp = date.today().isoformat()
@@ -122,6 +124,11 @@ def export(job: Job) -> dict[str, tuple[str, int]]:
         files[kind] = (str(path), _write(path, [_row(a, mapped) for a in selected]))
 
     write("everyone", agents)
+    if left_out:
+        write("left-out", left_out)
+    else:
+        for old in job.export_dir.glob(f"{job.name}-left-out-*.csv"):
+            old.unlink()
     with_email = [a for a in agents if a.get("email")]
     verified = any(a.get("email_check") for a in with_email)
     if verified:

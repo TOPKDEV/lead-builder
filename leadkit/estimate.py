@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 
-from leadkit import emailverify, linetype, phones, realtor, settings
+from leadkit import emailverify, linetype, phones, realtor, settings, skiplist
 from leadkit.jobs import Job
 
 P = settings.PRICES
@@ -193,6 +193,7 @@ def spend(usage: dict) -> dict[str, float]:
 
 def quote(job: Job) -> dict:
     store = job.store()
+    skiplist.apply(store)
     lines: list[dict] = []
     notes: list[str] = []
     estimated = False

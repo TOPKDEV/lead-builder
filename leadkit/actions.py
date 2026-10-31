@@ -160,6 +160,16 @@ def add_steps(job: Job, addons) -> list[str]:
     return added
 
 
+def refresh_skip_list() -> None:
+    """Bring finished lists in line with the skip list straight away, so a
+    spreadsheet already on disk doesn't keep someone who was just added."""
+    from leadkit import export
+    for name in jobs.all_names():
+        job = jobs.load(name)
+        if job.export_dir.exists() and any(job.export_dir.glob("*.csv")):
+            export.export(job)
+
+
 # --- progress ---------------------------------------------------------------
 
 def status(job: Job) -> dict:
@@ -178,6 +188,7 @@ def status(job: Job) -> dict:
         "mobile": one("SELECT COUNT(*) FROM agents WHERE phone_type = 'mobile' "
                       "AND COALESCE(phone_name_match, '') != 'mismatch' AND COALESCE(phone_litigator, 0) = 0"),
         "probably_cells": one("SELECT COUNT(*) FROM agents WHERE phone_line = 'mobile' AND phone_type = 'unknown'"),
+        "left_out": one("SELECT COUNT(*) FROM skipped_agents"),
         "replaced": one("SELECT COUNT(*) FROM agents WHERE phone_fix = 'replaced'"),
         "fix_tried": one("SELECT COUNT(*) FROM agents WHERE phone_fix IS NOT NULL"),
         "volume": one("SELECT COUNT(*) FROM agents WHERE volume_status IS NOT NULL"),
@@ -200,7 +211,7 @@ def files(job: Job) -> list[dict]:
         kind = p.stem[len(job.name) + 1:].rsplit("-", 3)[0]
         newest[kind] = p
     order = ["everyone", "email-ready", "email-probably-ok", "email-ready-UNVERIFIED", "cell-phones",
-             "cell-phones-probably", "producers"]
+             "cell-phones-probably", "producers", "left-out"]
     out = []
     for kind in sorted(newest, key=lambda k: order.index(k) if k in order else 99):
         p = newest[kind]
