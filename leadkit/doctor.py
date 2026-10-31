@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from leadkit import monid, settings
+from leadkit import linetype, monid, settings
 from leadkit.emails import headless
 
 
@@ -23,6 +23,7 @@ def _monid() -> str:
 # (name, the .env keys it needs, test). Shared with the keys page.
 CHECKS = [
     ("monid", ["MONID_API_KEY"], _monid),
+    ("twilio", ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"], linetype.account_check),
 ]
 
 

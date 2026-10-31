@@ -19,7 +19,8 @@ from contextlib import contextmanager
 
 from collections import Counter
 
-from leadkit import cellfinder, emailverify, estimate, monid, phones, realtor, rollup, search, settings, skiptrace, volume
+from leadkit import (cellfinder, emailverify, estimate, linetype, monid, phones, realtor, rollup, search, settings,
+                     skiptrace, volume)
 from leadkit.emails import headless
 from leadkit.emails.finder import find_email
 from leadkit.http import Session
@@ -426,6 +427,25 @@ def step_fix_phones(job: Job, store: Store, meter: Meter, limit: int | None):
     _pool(todo, settings.LOOKUP_WORKERS, fix, "finding real cell numbers")
     replaced = store.one("SELECT COUNT(*) FROM agents WHERE phone_fix = 'replaced'") or 0
     print(f"  {replaced:,} numbers replaced with the agent's own cell so far")
+    if linetype.configured():
+        _carrier_check(store, meter)
+
+
+def _carrier_check(store: Store, meter: Meter):
+    """Numbers still on no record, with a carrier's answer: a cell goes in
+    the "probably" file, since nothing shows whose it is."""
+    def check(a):
+        line = linetype.lookup(a["phone_e164"], usage=meter)
+        store.update_agent(a["key"], phone_line=line)
+        number = phones.pretty(a["phone_e164"])
+        if line == "mobile":
+            feed("fix_phones", "ok", f"{a['name']}  {number}  a cell, owner unconfirmed")
+        else:
+            feed("fix_phones", "info", f"{a['name']}  {number}  {line}, not a cell")
+
+    todo = store.agents("phone_fix = 'not_found' AND phone_type = 'unknown' AND phone_e164 IS NOT NULL "
+                        "AND phone_line IS NULL")
+    _pool(todo, settings.LOOKUP_WORKERS, check, "carrier check")
 
 
 STEPS = {

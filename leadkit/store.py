@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS agents (
     phone_original TEXT,            -- the number that was replaced
     phone_found_on TEXT,            -- where the replacement was found
     phone_trace TEXT,               -- the skip trace record behind the phone check, as JSON
+    phone_line TEXT,                -- a carrier's answer (Twilio) on a number no record knows
     homes_phone TEXT,
     phone_litigator INTEGER,        -- 1 if the number belongs to a known TCPA litigator
     homes_profile TEXT, seller_deals_year INTEGER, deals_year INTEGER,

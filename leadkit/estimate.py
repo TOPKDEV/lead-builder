@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 
-from leadkit import emailverify, phones, realtor, settings
+from leadkit import emailverify, linetype, phones, realtor, settings
 from leadkit.jobs import Job
 
 P = settings.PRICES
@@ -90,11 +90,14 @@ def _numbers_to_look_up(store) -> int:
 
 def fix_cost_each(job: Job) -> float:
     # The agent's own record by email and/or name (each billed only when it
-    # finds someone), and for about half, web searches plus checks on the
-    # numbers they turn up.
+    # finds someone). For about 60% (Weston) that has no cell, so searches
+    # for their Zillow profile, then the web and checks on the numbers it
+    # turns up. For about 20%, the people database, and Twilio if it's set up.
     trace = 1.5 * settings.PRICES["skip_trace"]
+    zillow = 1.5 * (_search_price() + settings.PRICES["zillow_profile"])
     web = 2 * _search_price() + AVG_FIX_LOOKUPS * phones.lookup_price()
-    return trace + 0.5 * web
+    last = settings.PRICES["people_lookup"] + (settings.PRICES["twilio_line"] if linetype.configured() else 0)
+    return trace + 0.6 * (zillow + web) + 0.2 * last
 
 
 def fix_summary(job: Job) -> dict:
@@ -175,7 +178,7 @@ def spend(usage: dict) -> dict[str, float]:
     for provider, u in usage.items():
         if provider == "monid":
             out[provider] = u["calls"] * P["monid_call"]
-        elif provider in ("phone", "email", "skiptrace", "zillow", "realtor"):
+        elif provider in ("phone", "email", "skiptrace", "zillow", "realtor", "twilio"):
             out[provider] = u["units"]  # recorded in dollars
     return out
 
@@ -254,8 +257,8 @@ def quote(job: Job) -> dict:
             else:
                 # Not looked up yet: on listing data roughly half the numbers are
                 # an office line or a landline. A guess, so the quote says so.
-                notes.append("fix_phones assumes half the numbers need fixing; the real count is known "
-                             "once phones are checked.")
+                notes.append("Finding real cells assumes half the numbers are wrong; the real count is known "
+                             "once the phones are checked.")
                 fix = in_scope * FIX_SHARE
             add("fix_phones", "agents whose number isn't their own cell: looked up by email or name, "
                 "then searched and up to 3 candidates checked",

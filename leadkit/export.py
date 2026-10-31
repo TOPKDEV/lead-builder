@@ -26,7 +26,8 @@ from leadkit.jobs import Job
 COLUMNS = [
     ("first_name", "first_name"), ("last_name", "last_name"), ("name", "full_name"),
     ("email", "email"), ("email_check", "email_verified"), ("email_source", "email_found_on"),
-    ("phone_pretty", "phone"), ("phone_type", "phone_type"), ("phone_carrier", "phone_carrier"),
+    ("phone_pretty", "phone"), ("phone_type", "phone_type"), ("phone_line", "carrier_says"),
+    ("phone_carrier", "phone_carrier"),
     ("phone_caller_name", "phone_registered_to"), ("phone_name_match", "phone_matches_agent"),
     ("phone_found_on", "phone_found_on"), ("phone_original", "office_or_old_phone"),
     ("phone_note", "phone_note"), ("phone_litigator_flag", "known_tcpa_litigator"), ("other_phones", "other_phones_on_listings"),
@@ -57,6 +58,8 @@ def _row(agent: dict, mapped: set[str]) -> dict:
         a["phone_note"] = f"confirmed as their cell by their own record (it looked like: {a['phone_note']})"
     elif a.get("phone_fix") == "not_found":
         a["phone_note"] = f"{a['phone_note']}; no better number found"
+        if a.get("phone_line") == "mobile":
+            a["phone_note"] += "; a carrier says it's a cell, but nothing shows it's theirs"
     a["phone_litigator_flag"] = {1: "YES, don't text or auto-dial", 0: "no"}.get(a.get("phone_litigator"), "")
     a["phone_name_match"] = {"match": "yes", "mismatch": "NO"}.get(a.get("phone_name_match") or "", "")
     if a.get("volume_status") == "found":
@@ -138,6 +141,9 @@ def export(job: Job) -> dict[str, tuple[str, int]]:
         # A cell registered to someone else is not this agent's cell.
         write("cell-phones", [a for a in agents if a.get("phone_type") == "mobile" and not a.get("phone_litigator")
                               and a.get("phone_name_match") != "mismatch"])
+        probably = [a for a in agents if a.get("phone_line") == "mobile" and a.get("phone_type") == "unknown"]
+        if probably:
+            write("cell-phones-probably", probably)
     if any(a.get("volume_status") == "found" for a in agents):
         write("producers", [a for a in agents if (a.get("seller_deals_year") or 0) >= job.producer_min
                             and not volume.is_listing_mill(a["seller_deals_year"], a["brokerage"])])

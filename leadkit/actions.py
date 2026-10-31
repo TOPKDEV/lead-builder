@@ -177,6 +177,7 @@ def status(job: Job) -> dict:
         # Counted the way the cell-phones file picks them.
         "mobile": one("SELECT COUNT(*) FROM agents WHERE phone_type = 'mobile' "
                       "AND COALESCE(phone_name_match, '') != 'mismatch' AND COALESCE(phone_litigator, 0) = 0"),
+        "probably_cells": one("SELECT COUNT(*) FROM agents WHERE phone_line = 'mobile' AND phone_type = 'unknown'"),
         "replaced": one("SELECT COUNT(*) FROM agents WHERE phone_fix = 'replaced'"),
         "fix_tried": one("SELECT COUNT(*) FROM agents WHERE phone_fix IS NOT NULL"),
         "volume": one("SELECT COUNT(*) FROM agents WHERE volume_status IS NOT NULL"),
@@ -197,7 +198,8 @@ def files(job: Job) -> list[dict]:
     for p in sorted(job.export_dir.glob("*.csv")):
         kind = p.stem[len(job.name) + 1:].rsplit("-", 3)[0]
         newest[kind] = p
-    order = ["everyone", "email-ready", "email-probably-ok", "email-ready-UNVERIFIED", "cell-phones", "producers"]
+    order = ["everyone", "email-ready", "email-probably-ok", "email-ready-UNVERIFIED", "cell-phones",
+             "cell-phones-probably", "producers"]
     out = []
     for kind in sorted(newest, key=lambda k: order.index(k) if k in order else 99):
         p = newest[kind]

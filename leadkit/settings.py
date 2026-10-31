@@ -27,9 +27,10 @@ def env_float(name: str, default: float) -> float:
 
 # --- Keys -------------------------------------------------------------------
 # One key does everything: Monid (monid.ai) runs every outside tool the
-# lead builder uses and bills them all to one balance.
-KEY_NAMES = ["MONID_API_KEY"]
-MONID_API_KEY = ""
+# lead builder uses and bills them all to one balance. Twilio is optional:
+# with it, numbers no record knows get a carrier's answer (leadkit/linetype.py).
+KEY_NAMES = ["MONID_API_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN"]
+MONID_API_KEY = TWILIO_ACCOUNT_SID = TWILIO_AUTH_TOKEN = ""
 
 
 def reload_keys() -> None:
@@ -61,6 +62,12 @@ PRICES = {
     # phone check: traced by the number, it says whose it is and whether it's
     # a cell. Traced by email or name, it finds the agent's real cell.
     "skip_trace": env_float("PRICE_SKIP_TRACE", 0.0077),
+    # Finding a cell the skip trace doesn't have: an agent's Zillow profile,
+    # and DataLegion's people database, per call.
+    "zillow_profile": env_float("PRICE_ZILLOW_PROFILE", 0.01),
+    "people_lookup": env_float("PRICE_PEOPLE_LOOKUP", 0.065),
+    # Twilio Line Type Intelligence, per number (the optional second key).
+    "twilio_line": env_float("PRICE_TWILIO_LINE", 0.008),
 }
 
 # Which Monid tool checks emails: "anyapi" or "hunter".

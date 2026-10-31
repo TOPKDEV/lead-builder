@@ -64,13 +64,16 @@ everything for you. Same engine, same files.
 
 Everything runs on one key: [Monid](https://monid.ai), one prepaid balance
 for every tool the builder uses. Sign up, add credit, create an API key and
-paste it into the page the app opens. No other accounts.
+paste it into the page the app opens. No other accounts are needed.
+
+Twilio is an optional extra on the same page: about $1.20 per 1,000 agents, from your own
+Twilio balance, for a carrier's answer on numbers no record knows.
 
 | What Monid does | Tool behind it | Price |
 |---|---|---|
 | New list: count listings, then get them with each agent's name, phone and email | Zillow and Realtor.com search (AnyAPI) | ~$2.50 per 1,000 listings |
 | Phone checks: whose number it is, cell or landline | skip trace (AnyAPI) | ~$0.008/number, free when nobody is found |
-| Finding the real cell for a wrong number | skip trace by email or name, then search | ~$0.02 per wrong number |
+| Finding the real cell for a wrong number | skip trace by email or name, the agent's Zillow profile, web search, a people database | ~$0.04 per wrong number |
 | Email checks | AnyAPI email verify | ~$0.0066/email |
 | Finding missing emails | Google search (MrScraper) and the agent's own sites | ~$0.0024/agent |
 | Top producers | homes.com profile, via Google and Firecrawl | ~$0.003/agent |
@@ -90,7 +93,7 @@ passes the approved budget by 25%.
 | 4,000 | ~$43 |
 
 Finding the real cell for the numbers that turn out to be wrong is a second,
-separately approved step: about $0.02 per wrong number. If a quarter are
+separately approved step: about $0.04 per wrong number. If a quarter are
 wrong, that's about $5 more per 1,000 agents.
 
 **Building from scratch:** the listings themselves cost about $2.50 per
@@ -106,7 +109,8 @@ Each file name starts with the job name and ends with the date.
 
 - `everyone.csv`: every agent and everything found about them
 - `email-ready.csv`: verified, deliverable emails only, ready for Instantly or Smartlead
-- `cell-phones.csv`: confirmed cell phones on the agent's own record, including the real cells found to replace office lines
+- `cell-phones.csv`: confirmed cell phones, on the agent's own record or their own Zillow profile, including the real cells found to replace office lines
+- `cell-phones-probably.csv`: only with the optional Twilio key: a carrier says it's a cell, but nothing shows whose
 - `producers.csv`: agents who sold 5+ listings in the last year, with flat-fee "listing mills" removed
 
 ## How it works
@@ -205,7 +209,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python leads.py run tampa
 ```
 
-`leads.py --help` lists every option.
+`leads.py --help` lists every option. Tests: `.venv/bin/python -m unittest discover -s tests -t .`
 
 ## Responsible use
 

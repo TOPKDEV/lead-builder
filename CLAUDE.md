@@ -125,11 +125,17 @@ it prints whether the key works.
 If they'd rather paste a key into this chat, save it for them without
 repeating it back: `.venv/bin/python leads.py set-key MONID_API_KEY <key>`.
 
+Twilio is an optional second key, and nothing needs it. With it, numbers no
+record knows and no search could replace get a carrier's answer (about $1.20
+per 1,000 agents, from their own Twilio balance), and the cells among them go
+in their own "probably" file. It's on the same keys page. Only mention it if
+they ask how to get more cells, or the phone results disappoint them.
+
 | What Monid does | Tool behind it | Price |
 |---|---|---|
 | New list: count listings, then get them with each agent's name, phone, email | Zillow and Realtor.com search (AnyAPI) | ~$2.50 per 1,000 listings |
 | Phone checks: whose number, cell or landline | skip trace (AnyAPI) | ~$0.008/number, free when nobody is found |
-| Finding real cells | skip trace by email or name, then search | ~$0.02 per wrong number |
+| Finding real cells | skip trace by email or name, the agent's Zillow profile, web search, a people database | ~$0.04 per wrong number |
 | Email checks | AnyAPI email verify | ~$0.0066/email |
 | Finding missing emails, top producers | Google search, homes.com via Firecrawl | ~$0.0024/agent, ~$0.003/agent |
 
@@ -207,7 +213,7 @@ finishes, like:
 
 ```
 312 of 1,000 numbers look wrong (not confirmed as theirs: 150, office lines shared by several agents: 90, landlines: 35, no number at all: 37).
-Finding their real cells would cost about $6.40 (about $0.020 each; you only pay for the search, found or not).
+Finding their real cells would cost about $13.40 (about $0.043 each; you only pay for the search, found or not).
 ```
 
 (`leads.py status NAME` shows the same summary any time later.) Tell them in
@@ -247,12 +253,14 @@ Files land in `exports/<job>/` (the run prints the paths):
 | `*-everyone-*.csv` | every agent and everything found | their master copy |
 | `*-email-ready-*.csv` | verified deliverable emails only | upload to Instantly, Smartlead, etc. |
 | `*-email-ready-UNVERIFIED-*.csv` | emails not verified (no verify step) | verify before sending |
-| `*-cell-phones-*.csv` | confirmed cells (on the agent's own record, not someone else's), including the ones `fix_phones` found | calling and texting |
+| `*-email-probably-ok-*.csv` | emails from a listing or their own list that no check can confirm or deny | a second batch, after the verified ones |
+| `*-cell-phones-*.csv` | confirmed cells: on the agent's own record or their own Zillow profile, including the ones `fix_phones` found | calling and texting |
+| `*-cell-phones-probably-*.csv` | only with Twilio: a carrier says it's a cell, but nothing shows whose | calling; expect some wrong people |
 | `*-producers-*.csv` | sold N+ listings last year, mills removed | best prospects for paid offers |
 
 Columns include `first_name` for mail merge, `active_listings`,
 `median_list_price`, `listings_sold_last_12mo`, `phone_type`,
-`phone_registered_to`, `phone_matches_agent`, `office_or_old_phone` and
+`carrier_says`, `phone_registered_to`, `phone_matches_agent`, `office_or_old_phone` and
 `phone_note` (why a number was replaced, or why it looks wrong if no
 replacement was found), and (for their own lists) every original column. Summarise the numbers for them: agents,
 emails, verified, cells, producers.
@@ -281,7 +289,7 @@ Mention once, briefly, when handing over phone numbers and emails:
 
 ```
 leads.py app                         the whole thing as a page in the browser
-leads.py keys [--job NAME]           browser page to paste and test the Monid key
+leads.py keys [--job NAME]           browser page to paste and test the keys
 leads.py set-key NAME VALUE          save one key from the chat
 leads.py doctor                      whether the key works, and what can run
 leads.py find-market "Tampa, FL"     look up a county, city or ZIP code (free)
