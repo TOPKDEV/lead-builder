@@ -190,6 +190,9 @@ def start_quote(name: str):
                     tail = (job.dir / "quote.log").read_text(encoding="utf-8", errors="replace").strip().splitlines()
                     raise actions.ActionError(next((l for l in reversed(tail) if l.strip() and not l.startswith("~ ")),
                                                    "Counting the listings failed."))
+            else:
+                # The page shows this log while pricing: an old count isn't news.
+                (job.dir / "quote.log").unlink(missing_ok=True)
             QUOTES[name] = {"state": "done", "result": actions.quote(jobs.load(name))}
         except Exception as e:  # shown to the person as-is
             QUOTES[name] = {"state": "error", "error": str(e)}
