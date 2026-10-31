@@ -5,7 +5,8 @@ check already fetched when the number on file was theirs, free, or else a
 trace by their email or name, checked to be them and not a namesake. A
 Wireless number on that record is their cell.
 
-Then their Zillow profile, whose "cell" is the number they gave Zillow
+Then their Zillow profile (shared with the sales fallback below), whose
+"cell" is the number they gave Zillow
 themselves. A profile is found through search and only counts if it's
 provably them: the same email, or both names in their state plus something
 local (the number on file, their brokerage, or their city on the profile).
@@ -49,6 +50,7 @@ MAX_LOOKUPS = 3
 MAX_PAGES = 3
 MAX_PROFILES = 3
 _PROFILE = re.compile(r"zillow\.com/profile/([^/?#]+)", re.I)
+_SALES = re.compile(r"\*\*([\d,]+)\*\*\s*sales last 12 months", re.I)
 # Words every brokerage shares, which say nothing about which one it is.
 _FIRM_WORDS = set("llc inc corp pa the of and real estate realty realtors group properties property brokers "
                   "brokerage associates international company homes fl florida re".split())
@@ -180,8 +182,8 @@ def _profile(slug: str, usage=None) -> dict | None:
     return (res.get("output") or {}).get("data")
 
 
-def zillow_cell(agent: dict, state: str | None, usage=None) -> dict | None:
-    """The cell on the agent's own Zillow profile, or None."""
+def _zillow_profile(agent: dict, state: str | None, usage=None) -> tuple[dict | None, str | None]:
+    """(the Zillow tool's answer, the page's URL) for the agent's own profile."""
     name, tried = agent.get("name") or "", set()
     city = (agent.get("cities") or "").split(";")[0].strip()
     for q in (f"{name} real estate agent {city} zillow profile reviews",
@@ -193,13 +195,34 @@ def zillow_cell(agent: dict, state: str | None, usage=None) -> dict | None:
                 continue
             tried.add(slug)
             data = _profile(slug, usage) or {}
-            user = data.get("user") or {}
-            e164 = phones.normalize((user.get("phoneNumbers") or {}).get("cell"))
-            if e164 and _is_their_profile(data, agent, state, e164):
-                return {"valid": True, "type": "mobile", "carrier": None, "caller_name": user.get("name"),
-                        "caller_type": None, "name_match": "match", "e164": e164,
-                        "source": f"https://www.zillow.com/profile/{m.group(1)}"}
-    return None
+            cell = phones.normalize(((data.get("user") or {}).get("phoneNumbers") or {}).get("cell"))
+            if data.get("user") and _is_their_profile(data, agent, state, cell):
+                return data, f"https://www.zillow.com/profile/{m.group(1)}"
+    return None, None
+
+
+def zillow_cell(agent: dict, state: str | None, usage=None) -> dict | None:
+    """The cell on the agent's own Zillow profile, or None."""
+    data, url = _zillow_profile(agent, state, usage)
+    user = (data or {}).get("user") or {}
+    e164 = phones.normalize((user.get("phoneNumbers") or {}).get("cell"))
+    return e164 and {"valid": True, "type": "mobile", "carrier": None, "caller_name": user.get("name"),
+                     "caller_type": None, "name_match": "match", "e164": e164, "source": url}
+
+
+def zillow_sales(agent: dict, state: str | None, usage=None) -> dict | None:
+    """For agents homes.com has nothing on: Zillow's sales in the last 12
+    months, from the profile page, as the tool only returns the last five. It
+    counts both sides of a deal, so it reads like homes.com's total deals, not
+    its seller deals (Weston: within one sale on 9 of 15 agents in both)."""
+    data, url = _zillow_profile(agent, state, usage)
+    if not data:
+        return None
+    if usage:
+        usage("monid")
+    m = _SALES.search(monid.render(url) or "")
+    return m and {"zillow_profile": url, "zillow_sales_year": int(m.group(1).replace(",", "")),
+                  "zillow_sales_total": (data.get("pastSales") or {}).get("total")}
 
 
 def people_cell(agent: dict, state: str | None, usage=None) -> dict | None:

@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS agents (
     phone_trace TEXT,               -- the skip trace record behind the phone check, as JSON
     phone_line TEXT,                -- a carrier's answer (Twilio) on a number no record knows
     homes_phone TEXT,
+    zillow_profile TEXT, zillow_sales_year INTEGER, zillow_sales_total INTEGER,  -- when homes.com has nothing
     phone_litigator INTEGER,        -- 1 if the number belongs to a known TCPA litigator
     homes_profile TEXT, seller_deals_year INTEGER, deals_year INTEGER,
     seller_volume_year REAL, seller_avg_price REAL, closed_sales_5yr INTEGER,

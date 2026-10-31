@@ -41,7 +41,7 @@ both.
 
 **Question 2**, header "What to do", multiSelect:
 - "Check phone numbers": is each one a cell, or an office line or landline? (If some are wrong, I'll tell you how many and quote finding the real ones.)
-- "Find top producers": listings each agent sold last year, from homes.com
+- "Find top producers": listings each agent sold last year, from homes.com and Zillow
 - "Find & verify emails": find missing emails and check they won't bounce
 
 What each checkbox turns on (`--addons`):
@@ -125,11 +125,11 @@ it prints whether the key works.
 If they'd rather paste a key into this chat, save it for them without
 repeating it back: `.venv/bin/python leads.py set-key MONID_API_KEY <key>`.
 
-Twilio is an optional second key, and nothing needs it. With it, numbers no
+Twilio is a recommended second key, and nothing needs it. With it, numbers no
 record knows and no search could replace get a carrier's answer (about $1.20
 per 1,000 agents, from their own Twilio balance), and the cells among them go
-in their own "probably" file. It's on the same keys page. Only mention it if
-they ask how to get more cells, or the phone results disappoint them.
+in their own "probably" file. In testing that took agents with a cell from
+84% to 92%. It's on the same keys page. Offer it once, when they check phones.
 
 | What Monid does | Tool behind it | Price |
 |---|---|---|
@@ -137,7 +137,8 @@ they ask how to get more cells, or the phone results disappoint them.
 | Phone checks: whose number, cell or landline | skip trace (AnyAPI) | ~$0.008/number, free when nobody is found |
 | Finding real cells | skip trace by email or name, the agent's Zillow profile, web search, a people database | ~$0.04 per wrong number |
 | Email checks | AnyAPI email verify | ~$0.0066/email |
-| Finding missing emails, top producers | Google search, homes.com via Firecrawl | ~$0.0024/agent, ~$0.003/agent |
+| Finding missing emails | Google search | ~$0.0024/agent |
+| Top producers | homes.com via Firecrawl, then the agent's Zillow profile for the ones it doesn't have | ~$0.01/agent |
 
 ## 5. The price, and their yes
 
@@ -259,7 +260,7 @@ Files land in `exports/<job>/` (the run prints the paths):
 | `*-producers-*.csv` | sold N+ listings last year, mills removed | best prospects for paid offers |
 
 Columns include `first_name` for mail merge, `active_listings`,
-`median_list_price`, `listings_sold_last_12mo`, `phone_type`,
+`median_list_price`, `listings_sold_last_12mo`, `zillow_sales_last_12mo` (both sides of a deal, only when homes.com had nothing), `phone_type`,
 `carrier_says`, `phone_registered_to`, `phone_matches_agent`, `office_or_old_phone` and
 `phone_note` (why a number was replaced, or why it looks wrong if no
 replacement was found), and (for their own lists) every original column. Summarise the numbers for them: agents,

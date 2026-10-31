@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from leadkit import doctor, settings
 
 # One card per service. Monid runs every tool the lead builder uses; Twilio
-# is the optional extra.
+# is the recommended extra, and nothing needs it.
 SERVICES = [
     {"check": "monid", "title": "Monid: the one key",
      "for": "Everything: building a list from active listings (with agents' emails), phone checks and "
@@ -28,7 +28,7 @@ SERVICES = [
               "building one is a few dollars per 1,000 listings.",
      "link": "https://monid.ai", "link_text": "Open Monid (sign up, then create an API key)",
      "keys": [("MONID_API_KEY", "API key (starts with monid_)")]},
-    {"check": "twilio", "title": "Twilio (optional)",
+    {"check": "twilio", "title": "Twilio (recommended)",
      "for": "When no record knows a number, a carrier's answer on whether it's a cell. Those go in their "
             "own \"probably\" file. Everything else works without it.",
      "price": "About $0.008 per number it checks, roughly $1.20 per 1,000 agents, from your own Twilio balance.",

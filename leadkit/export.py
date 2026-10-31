@@ -35,9 +35,10 @@ COLUMNS = [
     ("active_listings", "active_listings"), ("total_volume", "active_listing_volume"),
     ("median_price", "median_list_price"), ("avg_dom", "avg_days_on_market"),
     ("seller_deals_year", "listings_sold_last_12mo"), ("deals_year", "total_deals_last_12mo"),
+    ("zillow_sales_year", "zillow_sales_last_12mo"), ("zillow_sales_total", "zillow_total_sales"),
     ("seller_volume_year", "sold_volume_last_12mo"), ("seller_avg_price", "avg_sold_price"),
     ("closed_sales_5yr", "closed_sales_5yr"), ("listing_mill", "flat_fee_or_mill"),
-    ("homes_profile", "homes_com_profile"), ("sample_urls", "sample_listings"),
+    ("homes_profile", "homes_com_profile"), ("zillow_profile", "zillow_profile"), ("sample_urls", "sample_listings"),
     ("rows_merged", "duplicate_rows_merged"),
 ]
 
@@ -144,7 +145,6 @@ def export(job: Job) -> dict[str, tuple[str, int]]:
         probably = [a for a in agents if a.get("phone_line") == "mobile" and a.get("phone_type") == "unknown"]
         if probably:
             write("cell-phones-probably", probably)
-    if any(a.get("volume_status") == "found" for a in agents):
-        write("producers", [a for a in agents if (a.get("seller_deals_year") or 0) >= job.producer_min
-                            and not volume.is_listing_mill(a["seller_deals_year"], a["brokerage"])])
+    if any(a.get("volume_status") == "found" or a.get("zillow_sales_year") is not None for a in agents):
+        write("producers", [a for a in agents if volume.is_producer(a, job.producer_min)])
     return files

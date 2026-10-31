@@ -66,10 +66,17 @@ def name_key(raw: str | None) -> str:
     return f"{first} {words[-1]}"
 
 
+def _before_titles(raw: str | None) -> str:
+    """"Pat Lee - CLHMS, ABR" and "Pat Lee, Broker/Owner" are Pat Lee. A comma
+    after one word is "Lee, Pat", so that one stays."""
+    head = re.split(r"\s+[-|]\s+|,\s+", raw or "", maxsplit=1)[0]
+    return head if len(head.split()) >= 2 else raw or ""
+
+
 def search_name(raw: str) -> str:
     """The name as a search engine should get it: no licence suffix, no middle
     name. "Senada Adzem PA" finds nothing; "Senada Adzem" finds the profile."""
-    words = [w for w in re.sub(r"[.,]", " ", _dotted(raw)).split()
+    words = [w for w in re.sub(r"[.,]", " ", _dotted(_before_titles(raw))).split()
              if w.lower() not in SUFFIXES and len(w) > 1]
     if len(words) <= 2:
         return " ".join(words)

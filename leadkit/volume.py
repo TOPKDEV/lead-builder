@@ -114,13 +114,38 @@ def parse_profile(markdown: str) -> dict:
     return out
 
 
+def is_producer(agent: dict, bar: int) -> bool:
+    """Sold `bar` listings last year; Zillow's count stands in only when
+    homes.com has no answer. Flat-fee mills never count."""
+    deals = agent.get("seller_deals_year")
+    deals = agent.get("zillow_sales_year") if deals is None else deals
+    return (deals or 0) >= bar and not is_listing_mill(deals, agent.get("brokerage"))
+
+
 def is_listing_mill(seller_deals_year: int | None, brokerage: str | None) -> bool:
     return (seller_deals_year or 0) >= LISTING_MILL_MIN_DEALS or bool(FLAT_FEE.search(brokerage or ""))
 
 
+def _close_name(url: str, clean: str) -> bool:
+    """A profile under another form of the name: the same last name, and a
+    first name that starts the same (Ben / Benjamin, Marta / Martha, Mariene
+    G Menin). Too loose alone, so check() also wants them on the page's turf."""
+    words = re.sub(r"[^a-z\s]", "", clean.lower()).split()
+    parts = url.rstrip("/").split("/")[-2].split("-")
+    return len(words) >= 2 and words[-1] in parts and parts[0][:3] == words[0][:3]
+
+
+def _local(markdown: str, city: str | None, brokerage: str | None) -> bool:
+    text = markdown.lower()
+    firm = (brokerage or "").split(",")[0].strip().lower()
+    return bool(city and city.lower() in text) or bool(firm and firm in text)
+
+
 def find_profiles(name: str, city: str | None, usage=None) -> list[str]:
     """Every homes.com profile for this person. Agents often hold two, one
-    per brokerage or MLS feed, with their deals split between them."""
+    per brokerage or MLS feed, with their deals split between them. The quoted
+    searches miss many; on the Weston test an unquoted one found 24 of the 38
+    agents they'd given up on, some of them under another form of their name."""
     clean = search_name(name) or name
     slug = "-".join(re.sub(r"[^a-z\s]", "", clean.lower()).split())
     found: list[str] = []
@@ -132,13 +157,18 @@ def find_profiles(name: str, city: str | None, usage=None) -> list[str]:
             if m and f"/{slug}/" in m.group(0) and m.group(0) not in found:
                 found.append(m.group(0))
         if found:
-            break
+            return found[:3]
+    for url in search(f"{clean} real estate agent {city or ''} homes.com profile".replace("  ", " "), usage=usage):
+        m = _PROFILE.match(url)
+        if m and m.group(0) not in found and (f"/{slug}/" in m.group(0) or _close_name(m.group(0), clean)):
+            found.append(m.group(0))
     return found[:3]
 
 
-def check(name: str, city: str | None, usage=None) -> dict:
+def check(name: str, city: str | None, usage=None, brokerage: str | None = None) -> dict:
     """{status, profile, ...production}. status is found, no_profile or unreadable."""
     profiles = find_profiles(name, city, usage=usage)
+    exact = "-".join(re.sub(r"[^a-z\s]", "", (search_name(name) or name).lower()).split())
     if not profiles:
         return {"status": "no_profile"}
     readings = []
@@ -146,7 +176,7 @@ def check(name: str, city: str | None, usage=None) -> dict:
         if usage:
             usage("monid")
         markdown = monid.render(url)
-        if markdown and len(markdown) > 500:
+        if markdown and len(markdown) > 500 and (f"/{exact}/" in url or _local(markdown, city, brokerage)):
             readings.append({**parse_profile(markdown), "profile": url})
     usable = [r for r in readings if r["seller_deals_year"] is not None and r["reconciled"] is not False]
     pool = usable or [r for r in readings if r["seller_deals_year"] is not None]

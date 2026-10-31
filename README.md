@@ -66,7 +66,7 @@ Everything runs on one key: [Monid](https://monid.ai), one prepaid balance
 for every tool the builder uses. Sign up, add credit, create an API key and
 paste it into the page the app opens. No other accounts are needed.
 
-Twilio is an optional extra on the same page: about $1.20 per 1,000 agents, from your own
+Twilio is a recommended extra on the same page: about $1.20 per 1,000 agents, from your own
 Twilio balance, for a carrier's answer on numbers no record knows.
 
 | What Monid does | Tool behind it | Price |
@@ -76,7 +76,7 @@ Twilio balance, for a carrier's answer on numbers no record knows.
 | Finding the real cell for a wrong number | skip trace by email or name, the agent's Zillow profile, web search, a people database | ~$0.04 per wrong number |
 | Email checks | AnyAPI email verify | ~$0.0066/email |
 | Finding missing emails | Google search (MrScraper) and the agent's own sites | ~$0.0024/agent |
-| Top producers | homes.com profile, via Google and Firecrawl | ~$0.003/agent |
+| Top producers | homes.com profile, then the agent's Zillow profile for the ones it doesn't have | ~$0.01/agent |
 
 ## What it costs
 

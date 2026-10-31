@@ -989,7 +989,7 @@ function keyService(s, opts) {
 }
 async function renderKeysPage() {
   const k = await api("/api/keys");
-  $app.append(h("h1", {class: "page-title", text: "Your key"}), h("p", {class: "page-lead", text: "One Monid key runs everything; Twilio is an optional extra. Keys stay on this computer."}),
+  $app.append(h("h1", {class: "page-title", text: "Your key"}), h("p", {class: "page-lead", text: "One Monid key runs everything. Twilio is recommended for more cell numbers. Keys stay on this computer."}),
     h("div", {style: {marginTop: "24px"}}, (k.services || []).map(s => keyService(s))));
 }
 

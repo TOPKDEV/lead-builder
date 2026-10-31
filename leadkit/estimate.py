@@ -71,7 +71,8 @@ def _phone_scope_count(job: Job, store, agents: int, estimated: bool, pending: i
     if job.phones_for == "producers":
         unchecked = store.one("SELECT COUNT(*) FROM agents WHERE volume_status IS NULL") or 0
         if not estimated and not unchecked:
-            return store.one("SELECT COUNT(*) FROM agents WHERE seller_deals_year >= ?", (job.producer_min,)) or 0, True
+            return store.one("SELECT COUNT(*) FROM agents WHERE COALESCE(seller_deals_year, zillow_sales_year) >= ?",
+                             (job.producer_min,)) or 0, True
         notes.append(f"Phone steps assume {PRODUCER_SHARE:.0%} of agents are producers; "
                      "the real count is known after the homes.com check.")
         return int(agents * PRODUCER_SHARE), False
@@ -86,6 +87,13 @@ def _numbers_to_look_up(store) -> int:
     e164 = {a["key"]: a["phone_e164"] or phones.normalize(a["phone"]) for a in rows}
     counts = Counter(n for n in e164.values() if n)
     return sum(1 for a in rows if a["phone_status"] is None and e164[a["key"]] and counts[e164[a["key"]]] < 2)
+
+
+def _volume_price() -> float:
+    # About two searches and a page on homes.com. For the third it has
+    # nothing on, two more searches and a Zillow profile or two (Weston).
+    zillow = 2 * _search_price() + 1.5 * settings.PRICES["zillow_profile"] + P["monid_call"]
+    return 2 * _search_price() + 1.1 * P["monid_call"] + zillow / 3
 
 
 def fix_cost_each(job: Job) -> float:
@@ -153,7 +161,7 @@ def rough(mode: str, population: int = 0, rows: int = 0, min_listings: int = 1,
         "listings": ("Get listings", per_listing, "listing"),
         "emails": ("Find emails", found_share * 2 * search, "agent"),
         "verify_emails": ("Verify emails", with_email * emailverify.price(), "agent"),
-        "volume": ("Top producers (homes.com)", 1.5 * search + 1.1 * P["monid_call"], "agent"),
+        "volume": ("Top producers (homes.com, then Zillow)", _volume_price(), "agent"),
         "verify_phones": ("Check phone numbers", PHONE_SCOPE_SHARE.get(phones_for, 1.0) * phones.lookup_price(), "agent"),
     }
     wanted = (["listings"] if mode == "build" else []) + [s for s in unit if s in addons and s != "listings"]
@@ -238,8 +246,8 @@ def quote(job: Job) -> dict:
         add("verify_emails", "emails verified (only the ones found)", have, emailverify.price(), "verify_emails")
     if "volume" in job.addons:
         todo = known("SELECT COUNT(*) FROM agents WHERE volume_status IS NULL", agents)
-        add("volume", "agents looked up on homes.com (~1.5 searches + 1 page each)", todo,
-            1.5 * _search_price() + 1.1 * P["monid_call"], "volume")
+        add("volume", "agents looked up on homes.com, then Zillow for the ones it doesn't have", todo,
+            _volume_price(), "volume")
 
     if "verify_phones" in job.addons or "fix_phones" in job.addons:
         in_scope, exact = _phone_scope_count(job, store, agents, estimated, pending, notes)

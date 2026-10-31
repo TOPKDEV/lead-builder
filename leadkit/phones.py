@@ -127,7 +127,7 @@ def problem(agent: dict, shared: set[str]) -> str | None:
 PHONE_SCOPE = {
     "all": "1=1",
     "emails": "email IS NOT NULL AND COALESCE(email_check, 'ok') IN ('ok', 'catch_all')",
-    "producers": "seller_deals_year >= ?",
+    "producers": "COALESCE(seller_deals_year, zillow_sales_year) >= ?",
 }
 
 

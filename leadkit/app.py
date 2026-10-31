@@ -229,7 +229,7 @@ def unit_prices() -> dict:
     p = settings.PRICES
     return {
         "phone": phones.lookup_price(),
-        "volume": round(1.5 * search + 1.1 * p["monid_call"], 4),
+        "volume": round(estimate._volume_price(), 4),
         "emails": round(2 * search + settings.EMAIL_HIT_RATE * emailverify.price(), 4),
         "listing": round(p["realtor_call"] / realtor.TARGET + estimate.LISTING_OVERHEAD * p["realtor_listing"], 4),
     }

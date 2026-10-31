@@ -181,7 +181,8 @@ def status(job: Job) -> dict:
         "replaced": one("SELECT COUNT(*) FROM agents WHERE phone_fix = 'replaced'"),
         "fix_tried": one("SELECT COUNT(*) FROM agents WHERE phone_fix IS NOT NULL"),
         "volume": one("SELECT COUNT(*) FROM agents WHERE volume_status IS NOT NULL"),
-        "producers": one("SELECT COUNT(*) FROM agents WHERE seller_deals_year >= ?", (job.producer_min,)),
+        "producers": one("SELECT COUNT(*) FROM agents WHERE COALESCE(seller_deals_year, zillow_sales_year) >= ?",
+                         (job.producer_min,)),
         "spent": round(sum(estimate.spend(store.usage()).values()), 2),
     }
     store.close()

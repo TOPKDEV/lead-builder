@@ -310,7 +310,7 @@ def step_verify_phones(job: Job, store: Store, meter: Meter, limit: int | None):
     scope, params = phones.scope_sql(job)
     agents = store.agents(f"phone IS NOT NULL AND phone_status IS NULL AND {scope}", params)
     if job.phones_for == "producers":
-        agents = [a for a in agents if not volume.is_listing_mill(a["seller_deals_year"], a["brokerage"])]
+        agents = [a for a in agents if volume.is_producer(a, job.producer_min)]
     agents = agents[: limit or None]
     # The free check first: numbers that cannot exist never reach Twilio.
     paid = []
@@ -369,13 +369,17 @@ def step_volume(job: Job, store: Store, meter: Meter, limit: int | None):
     agents = store.agents("volume_status IS NULL")[: limit or None]
 
     def check(a):
-        r = volume.check(a["name"], _first_city(a) or None, usage=meter)
-        store.update_agent(a["key"], volume_status=r["status"], homes_profile=r.get("profile"),
+        r = volume.check(a["name"], _first_city(a) or None, usage=meter, brokerage=a["brokerage"])
+        zillow = {} if r["status"] == "found" else cellfinder.zillow_sales(a, skiptrace.state_of(a, None), meter) or {}
+        store.update_agent(a["key"], volume_status=r["status"], homes_profile=r.get("profile"), **zillow,
                            seller_deals_year=r.get("seller_deals_year"), deals_year=r.get("deals_year"),
                            seller_volume_year=r.get("seller_volume_year"),
                            seller_avg_price=r.get("seller_avg_price"),
                            closed_sales_5yr=r.get("closed_sales_5yr"), homes_phone=r.get("homes_phone"))
-        if r["status"] == "found":
+        if zillow:
+            feed("volume", "ok" if zillow["zillow_sales_year"] >= job.producer_min else "info",
+                 f"{a['name']}  {zillow['zillow_sales_year']} sales in 12 months (Zillow)")
+        elif r["status"] == "found":
             feed("volume", "ok" if (r.get("seller_deals_year") or 0) >= job.producer_min else "info",
                  f"{a['name']}  {r.get('seller_deals_year') or 0} listings sold in 12 months")
         else:
